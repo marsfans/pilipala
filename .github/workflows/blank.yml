@@ -34,11 +34,11 @@ jobs:
             java-version: "21"
             token: ${{secrets.GIT_TOKEN}}
 
-      - name: flutter build apk
+      - name: gradlew
         # 对应 android/app/build.gradle signingConfigs中的配置项
         run: |
           cd ./sing-box-for-android
-          ./gradlew assembleRelease
+          ./gradlew.bat assembleRelease
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v3.1.3
         with:
