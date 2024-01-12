@@ -42,7 +42,9 @@ jobs:
           tar -zxf libclash.tar.gz
           mkdir -p ./ios/Frameworks
           mv build/*.xcframework ios/Frameworks/libclash.xcframework
-          flutter build ipa
+          flutter pub get
+          # dart run build_runner build --delete-conflicting-outputs
+          flutter build ipa --release --export-options-plist=ios/Runner/Info.plist
           cd build/ios/ipa
           mv app-release.ipa clash_for_flutter-$VERSION-ios.ipa
       - name: Upload a Build Artifact
