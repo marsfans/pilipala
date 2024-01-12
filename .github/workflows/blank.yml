@@ -39,6 +39,7 @@ jobs:
         run: |
           cd ./clash-for-flutter
           curl -L https://github.com/mapleafgo/cff-core/releases/download/$CORE_VERSION/libclash-$CORE_VERSION-ios.tar.gz -o libclash.tar.gz
+          tar -zxf libclash.tar.gz
           mv build/*.xcframework ios/Frameworks/libclash.xcframework
           flutter build ipa
           cd build/ios/ipa
