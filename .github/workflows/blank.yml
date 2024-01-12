@@ -44,9 +44,10 @@ jobs:
           mv build/*.xcframework ios/Frameworks/libclash.xcframework
           flutter pub get
           # dart run build_runner build --delete-conflicting-outputs
-          flutter build ipa --release --export-options-plist=ios/Runner/Info.plist
-          cd build/ios/ipa
-          mv app-release.ipa clash_for_flutter-$VERSION-ios.ipa
+          # flutter build ipa --release --export-options-plist=ios/Runner/Info.plist
+          # cd build/ios/ipa
+          # mv app-release.ipa clash_for_flutter-$VERSION-ios.ipa
+          flutter build ios --release
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v4.0.0
         with:
