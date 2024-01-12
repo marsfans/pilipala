@@ -83,7 +83,7 @@ jobs:
           flutter build ios --release --no-codesign
           # xcode-project build-ipa --workspace ios/Runner.xcworkspace --scheme Runner --config Release
           # cd build/ios/ipa
-          mkdir Payload && cp ./build/ios/iphoneos/Runner.app ./Payload && zip -r -o app-release.ipa ./Payload
+          mkdir Payload && cp -r ./build/ios/iphoneos/Runner.app ./Payload && zip -r -o app-release.ipa ./Payload
           mv app-release.ipa clash_for_flutter-$VERSION-ios.ipa
           # flutter build ios --release
       - name: Upload a Build Artifact
