@@ -92,4 +92,4 @@ jobs:
           # Artifact name
           name: clash_for_flutter-$VERSION-ios
           # A file, directory or wildcard pattern that describes what to upload
-          path: clash-for-flutter/build/ios/ipa/*.ipa
+          path: clash-for-flutter/*.ipa
