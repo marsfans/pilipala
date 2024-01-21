@@ -36,8 +36,8 @@ jobs:
       - name: build
         run: |
           cd ${{ env.appname }}
-          # xcodebuild clean -workspace ${{ env.appname }}.xcworkspace -scheme ${{ env.appname }} -configuration Release
-          xcodebuild archive -workspace ${{ env.appname }}.xcworkspace -scheme ${{ env.appname }} -archivePath build/${{ env.appname }}.xcarchive archive
+          xcodebuild clean -workspace ${{ env.appname }}.xcodeproj -scheme ${{ env.appname }} -configuration Release
+          xcodebuild archive -workspace ${{ env.appname }}.xcodeproj -scheme ${{ env.appname }} -archivePath build/${{ env.appname }}.xcarchive # archive
           # xcodebuild -exportArchive -archivePath build/${{ env.appname }}.xcarchive -exportPath build -exportOptionsPlist ${{ env.appname }}/YoutubeDL-Info.plist
           xcrun -sdk iphoneos PackageApplication -v ${{ env.appname }}/build/Release-iphoneos/${{ env.appname }}.app -o ${{ env.appname }}/${{ env.appname }}-${{ env.version }}.ipa
       - name: upload
