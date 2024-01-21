@@ -36,15 +36,15 @@ jobs:
       - name: build
         run: |
           cd ${{ env.appname }}
-          xcodebuild clean -workspace ${{ env.appname }}.xcodeproj -scheme ${{ env.appname }} -configuration Release
-          xcodebuild archive -workspace ${{ env.appname }}.xcodeproj -scheme ${{ env.appname }} -archivePath build/${{ env.appname }}.xcarchive # archive
+          xcodebuild clean # -workspace $(PWD)/${{ env.appname }}.xcodeproj -scheme ${{ env.appname }} -configuration Release
+          xcodebuild archive -workspace $(PWD)/${{ env.appname }}/${{ env.appname }}.xcodeproj -scheme ${{ env.appname }} -archivePath $(PWD)/${{ env.appname }}/build/${{ env.appname }}.xcarchive # archive
           # xcodebuild -exportArchive -archivePath build/${{ env.appname }}.xcarchive -exportPath build -exportOptionsPlist ${{ env.appname }}/YoutubeDL-Info.plist
-          xcrun -sdk iphoneos PackageApplication -v ${{ env.appname }}/build/Release-iphoneos/${{ env.appname }}.app -o ${{ env.appname }}/${{ env.appname }}-${{ env.version }}.ipa
+          xcrun -sdk iphoneos PackageApplication -v $(PWD)/${{ env.appname }}/build/Release-iphoneos/${{ env.appname }}.app -o $(PWD)/${{ env.appname }}/${{ env.appname }}-${{ env.version }}.ipa
       - name: upload
         uses: actions/upload-artifact@v4.2.0
         with:
           # Artifact name
           name: ${{ env.appname }}-${{ env.version }}
           # A file, directory or wildcard pattern that describes what to upload
-          path: ${{ env.appname }}/${{ env.appname }}.ipa
+          path: ${{ env.appname }}/${{ env.appname }}-${{ env.version }}.ipa
       
