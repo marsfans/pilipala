@@ -35,7 +35,7 @@ jobs:
       # Runs a set of commands using the runners shell
       - name: build
         run: |
-          cd ${{ env.appname }}
+          # cd ${{ env.appname }}
           xcodebuild clean # -workspace $(PWD)/${{ env.appname }}.xcodeproj -scheme ${{ env.appname }} -configuration Release
           xcodebuild archive -workspace $(PWD)/${{ env.appname }}/${{ env.appname }}.xcodeproj -scheme ${{ env.appname }} -archivePath $(PWD)/${{ env.appname }}/build/${{ env.appname }}.xcarchive # archive
           # xcodebuild -exportArchive -archivePath build/${{ env.appname }}.xcarchive -exportPath build -exportOptionsPlist ${{ env.appname }}/YoutubeDL-Info.plist
