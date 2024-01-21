@@ -35,11 +35,11 @@ jobs:
       # Runs a set of commands using the runners shell
       - name: build
         run: |
-          # cd ${{ env.appname }}
-          xcodebuild clean # -workspace $(PWD)/${{ env.appname }}.xcodeproj -scheme ${{ env.appname }} -configuration Release
-          xcodebuild archive -workspace $(PWD)/${{ env.appname }}/${{ env.appname }}.xcodeproj -scheme ${{ env.appname }} -archivePath $(PWD)/${{ env.appname }}/build/${{ env.appname }}.xcarchive # archive
+          cd ${{ env.appname }}
+          xcodebuild clean # -workspace $PWD/${{ env.appname }}.xcodeproj -scheme ${{ env.appname }} -configuration Release
+          xcodebuild archive -workspace $PWD/${{ env.appname }}.xcodeproj -scheme ${{ env.appname }} -archivePath $PWD/build/${{ env.appname }}.xcarchive # archive
           # xcodebuild -exportArchive -archivePath build/${{ env.appname }}.xcarchive -exportPath build -exportOptionsPlist ${{ env.appname }}/YoutubeDL-Info.plist
-          xcrun -sdk iphoneos PackageApplication -v $(PWD)/${{ env.appname }}/build/Release-iphoneos/${{ env.appname }}.app -o $(PWD)/${{ env.appname }}/${{ env.appname }}-${{ env.version }}.ipa
+          xcrun -sdk iphoneos PackageApplication -v $PWD/build/Release-iphoneos/${{ env.appname }}.app -o $PWD/${{ env.appname }}-${{ env.version }}.ipa
       - name: upload
         uses: actions/upload-artifact@v4.2.0
         with:
