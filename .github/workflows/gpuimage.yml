@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: yt-dlp gui
+name: AwemeLike
 
 # Controls when the workflow will run
 on:
@@ -37,7 +37,7 @@ jobs:
         run: |
           cd ${{ env.appname }}
           xcodebuild clean # -workspace $PWD/${{ env.appname }}.xcodeproj -scheme ${{ env.appname }} -configuration Release
-          xcodebuild archive -workspace $PWD/${{ env.appname }}.xcodeproj/project.xcworkspace -scheme ${{ env.appname }} -archivePath $PWD/build/${{ env.appname }}.xcarchive # archive
+          xcodebuild archive -workspace $PWD/${{ env.appname }}.xcworkspace -scheme ${{ env.appname }} -archivePath $PWD/build/${{ env.appname }}.xcarchive # archive
           # xcodebuild -exportArchive -archivePath build/${{ env.appname }}.xcarchive -exportPath build -exportOptionsPlist ${{ env.appname }}/YoutubeDL-Info.plist
           xcrun -sdk iphoneos PackageApplication -v $PWD/build/Release-iphoneos/${{ env.appname }}.app -o $PWD/${{ env.appname }}-${{ env.version }}.ipa
       - name: upload
