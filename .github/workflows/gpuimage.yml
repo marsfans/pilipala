@@ -36,6 +36,7 @@ jobs:
       - name: build
         run: |
           cd ${{ env.appname }}
+          pod install
           xcodebuild clean # -workspace $PWD/${{ env.appname }}.xcodeproj -scheme ${{ env.appname }} -configuration Release
           xcodebuild archive -workspace $PWD/${{ env.appname }}.xcworkspace -scheme ${{ env.appname }} -archivePath $PWD/build/${{ env.appname }}.xcarchive -allowProvisioningUpdates # archive
           # xcodebuild -exportArchive -archivePath build/${{ env.appname }}.xcarchive -exportPath build -exportOptionsPlist ${{ env.appname }}/YoutubeDL-Info.plist
