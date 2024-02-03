@@ -77,11 +77,11 @@ jobs:
           # dart run build_runner build --delete-conflicting-outputs
           #flutter build ipa --release --export-options-plist=ios/Runner/
           xcode-project use-profiles
-          flutter build ipa --release --no-codesign
+          flutter build ios --release --no-codesign
           # xcode-project build-ipa --workspace ios/Runner.xcworkspace --scheme Runner --config Release
           # cd build/ios/ipa
-          # mkdir Payload && cp -r ./build/ios/iphoneos/Runner.app ./Payload && zip -r -o app-release.ipa ./Payload
-          # mv app-release.ipa ${{ env.NAME }}-${{ env.VERSION }}-ios.ipa
+          mkdir Payload && cp -r ./build/ios/iphoneos/Runner.app ./Payload && zip -r -o app-release.ipa ./Payload
+          mv app-release.ipa ${{ env.NAME }}-${{ env.VERSION }}-ios.ipa
           # flutter build ios --release
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v4.0.0
@@ -89,4 +89,4 @@ jobs:
           # Artifact name
           name: ${{ env.NAME }}-${{ env.VERSION }}-ios
           # A file, directory or wildcard pattern that describes what to upload
-          path: clash-for-flutter/*.ipa
+          path: ${{ env.NAME }}/*.ipa
