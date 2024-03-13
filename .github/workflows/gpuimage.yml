@@ -29,9 +29,6 @@ jobs:
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2.13.0
-        with:
-          # The Flutter version to make available on the path
-          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Install dependencies
         run: |
