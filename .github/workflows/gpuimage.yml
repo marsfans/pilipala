@@ -42,18 +42,18 @@ jobs:
       - name: Build ${{ matrix.platform }}
         run: |
           cd ${{ env.NAME }}
-          if [ "${{ matrix.platform }}" = "macos-latest" ]; then
+          if [ "${{ matrix.os }}" = "macos-latest" ]; then
             flutter build macos
-          elif [ "${{ matrix.platform }}" = "windows-latest" ]; then
+          elif [ "${{ matrix.os }}" = "windows-latest" ]; then
             flutter build windows
-          elif [ "${{ matrix.platform }}" = "ubuntu-latest" ]; then
+          elif [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
             flutter build linux
           fi
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ env.NAME }}-${{ env.VERSION }}-${{ matrix.platform }}-build
+          name: ${{ env.NAME }}-${{ env.VERSION }}-${{ matrix.os }}-build
           path: |
             ${{ env.NAME }}/build/**/*.dmg
             ${{ env.NAME }}/build/**/*.exe
