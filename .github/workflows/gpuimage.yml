@@ -39,7 +39,7 @@ jobs:
           cd ${{ env.NAME }}
           flutter pub get
 
-      - name: Build ${{ matrix.platform }}
+      - name: Build ${{ matrix.os }}
         run: |
           cd ${{ env.NAME }}
           if [ "${{ matrix.os }}" = "macos-latest" ]; then
