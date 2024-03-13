@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: build pingora
+name: build coriander_player
 
 # Controls when the workflow will run
 on:
@@ -16,24 +16,45 @@ on:
 env:
   FLUTTER_VERSION: "3.16.0"
   CORE_VERSION: "1.18.1"
-  VERSION: "1.2.7"
-  NAME: "bili_you"
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+  VERSION: "0.0.2"
+  NAME: "coriander_player"
 jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        target: [x86_64-unknown-linux-gnu, x86_64-apple-darwin, x86_64-pc-windows-msvc]
+        platform: [android, ios, web]
     steps:
-      - uses: actions/checkout@v3
-      - name: Setup Rust toolchain
-        uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v2
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v1
         with:
-          profile: minimal
-          toolchain: stable
-      - name: Build
+          flutter-version: '2.x'
+
+      - name: Install dependencies
         run: |
-          git clone https://github.com/cloudflare/pingora
-          cd pingora
-          cargo build --target ${{ matrix.target }} --release
+          git clone https://github.com/Ferry-200/coriander_player
+          cd ${{ env.NAME }}
+          flutter pub get
+
+      - name: Build ${{ matrix.platform }}
+        run: |
+          cd ${{ env.NAME }}
+          if [ "${{ matrix.platform }}" = "android" ]; then
+            flutter build apk
+          elif [ "${{ matrix.platform }}" = "ios" ]; then
+            flutter build ios --no-codesign
+          elif [ "${{ matrix.platform }}" = "web" ]; then
+            flutter build web
+          fi
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ env.NAME }}-${{ env.VERSION }}-${{ matrix.platform }}-build
+          path: |
+            ${{ env.NAME }}/build/**/*.apk
+            ${{ env.NAME }}/build/**/*.ipa
+            ${{ env.NAME }}/build/web/**
+          if-no-files-found: ignore
