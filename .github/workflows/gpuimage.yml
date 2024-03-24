@@ -31,6 +31,7 @@ jobs:
         openssl req -new -key private.key -out certificate.csr -subj "/C=US/ST=California/L=San Francisco/O=Example/CN=example.com"
         openssl x509 -req -days 3650 -in certificate.csr -signkey private.key -out certificate.crt
         openssl pkcs12 -export -out certificate.pfx -inkey private.key -in certificate.crt -passout pass:134679
+        ls
     
       
     - name: Restore NuGet packages
@@ -40,7 +41,7 @@ jobs:
     - name: Build UWP Appx
       run: |
         cd AllLive
-        msbuild /p:Configuration=Release /p:Platform=x86 /m /nologo /p:AppxBundlePlatforms="x86|x64|ARM" /p:AppxBundle=Always /p:OutputPath=./release /p:AppxPackageSigningEnabled=true /p:AppxPackageCertificateThumbprint="./certificate.pfx" AllLive.sln
+        msbuild /p:Configuration=Release /p:Platform=x86 /m /nologo /p:AppxBundlePlatforms="x86|x64|ARM" /p:AppxBundle=Always /p:OutputPath=./release /p:PackageCertificateKeyFile=./certificate.pfx AllLive.sln
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v4.3.1
       with:
