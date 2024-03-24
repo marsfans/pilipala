@@ -12,12 +12,7 @@ on:
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
-  
-env:
-  FLUTTER_VERSION: "3.16.0"
-  CORE_VERSION: "1.18.1"
-  VERSION: "1.10.2"
-  NAME: "Playboy"
+
 jobs:
   build:
     runs-on: windows-latest
@@ -27,15 +22,25 @@ jobs:
 
     - name: Setup MSBuild
       uses: microsoft/setup-msbuild@v1.0.2
-    - uses: actions/checkout@v4
-    - uses: GuillaumeFalourd/setup-windows10-sdk-action@v2
-      with:
-        sdk-version: 20348
-    - name: Verify makecert/certutil installation
-      shell: bash
+    - name: Install Windows SDK
       run: |
-        makecert -?
-        certutil -?
+        choco install windows-sdk-10.0
+        # choco install windows-sdk-8.1
+
+    - name: Add makecert to PATH
+      run: |
+        $env:PATH = "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22000.0\x64;" + $env:PATH
+
+    - name: Add certutil to PATH
+      run: |
+        $env:PATH = "C:\Windows\system32;" + $env:PATH
+
+    - name: Verify makecert installation
+      run: makecert -?
+      
+    - name: Verify certutil installation
+      run: certutil -?
+      
     - name: git clone 
       run: git clone https://github.com/xiaoyaocz/AllLive 
     - name: CA
