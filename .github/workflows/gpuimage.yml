@@ -24,15 +24,10 @@ jobs:
       uses: microsoft/setup-msbuild@v1.0.2
     - name: Install Scoop
       run: |
-        Set-ExecutionPolicy RemoteSigned -Scope Process
-        iex (new-object net.webclient).downloadstring('https://get.scoop.sh')
-    - name: Install makecert and certutil
-      run: scoop install makecert certutil
-
-    - name: Add Scoop to PATH
-      run: |
-        scoop reset
-        scoop bin
+        curl -sL https://get.scoop.sh | sh
+        scoop install makecert
+        scoop install certutil
+        setx PATH "%PATH%;%SCOOP_DIR%\bin"
 
     # - name: git clone 
     #   run: git clone https://github.com/xiaoyaocz/AllLive
