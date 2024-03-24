@@ -27,19 +27,10 @@ jobs:
 
     - name: Setup MSBuild
       uses: microsoft/setup-msbuild@v1.0.2
-    - name: Install Windows SDK
-      run: |
-        choco install windows-sdk-10.0
-        choco install windows-sdk-8.1
-
-    - name: Add makecert to PATH
-      run: |
-        $env:PATH = "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22000.0\x64;" + $env:PATH
-
-    - name: Add certutil to PATH
-      run: |
-        $env:PATH = "C:\Windows\system32;" + $env:PATH
-        
+    - uses: actions/checkout@v4
+    - uses: GuillaumeFalourd/setup-windows10-sdk-action@v2
+      with:
+        sdk-version: 20348
     - name: git clone 
       run: git clone https://github.com/xiaoyaocz/AllLive 
     - name: CA
