@@ -22,26 +22,15 @@ jobs:
 
     - name: Setup MSBuild
       uses: microsoft/setup-msbuild@v1.0.2
-    - name: Install Scoop
-      run: |
-        Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-        Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
-        scoop install makecert
-        scoop install certutil
-        setx PATH "%PATH%;%SCOOP_DIR%\bin"
-
-    # - name: git clone 
-    #   run: git clone https://github.com/xiaoyaocz/AllLive
-    # - name: Install certutil/makecert
-    #   run: |
-    #     cd AllLive
-    #     curl -L -o makecert.exe https://github.com/FiloSottile/mkcert/releases/download/v1.4.4/mkcert-v1.4.4-windows-amd64.exe
-    #     go install github.com/jsws/certutil@latest
+    - name: git clone
+      run: git clone https://github.com/xiaoyaocz/AllLive
     - name: CA
       run: |
         cd AllLive
-        makecert.exe -r -pe -n "CN=fans" -b 01/01/2022 -e 01/01/2025 -eku 1.3.6.1.5.5.7.3.3 -ss MY -len 2048 -sp "Microsoft Enhanced RSA and AES Cryptographic Provider" -sy 24 AllLive.cer
-        certutil.exe -user -exportpfx MY "AllLive" AllLive.pfx
+        openssl genrsa -out private.key 2048
+        openssl req -new -key private.key -out certificate.csr -subj "/C=US/ST=California/L=San Francisco/O=Example/CN=example.com"
+        openssl x509 -req -days 3650 -in certificate.csr -signkey private.key -out certificate.crt
+        openssl pkcs12 -export -out certificate.pfx -inkey private.key -in certificate.crt -passout pass:134679
     
       
     - name: Restore NuGet packages
@@ -51,7 +40,7 @@ jobs:
     - name: Build UWP Appx
       run: |
         cd AllLive
-        msbuild /p:Configuration=Release /p:Platform=x86 /m /nologo /p:AppxBundlePlatforms="x86|x64|ARM" /p:AppxBundle=Always /p:OutputPath=./release /p:AppxPackageSigningEnabled=true /p:AppxPackageCertificateThumbprint="AllLive.pfx" AllLive.sln
+        msbuild /p:Configuration=Release /p:Platform=x86 /m /nologo /p:AppxBundlePlatforms="x86|x64|ARM" /p:AppxBundle=Always /p:OutputPath=./release /p:AppxPackageSigningEnabled=true /p:AppxPackageCertificateThumbprint="./certificate.pfx" AllLive.sln
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v4.3.1
       with:
