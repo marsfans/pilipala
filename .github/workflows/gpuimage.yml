@@ -22,20 +22,30 @@ jobs:
 
     - name: Setup MSBuild
       uses: microsoft/setup-msbuild@v1.0.2
-    
-      
-    - name: git clone 
-      run: git clone https://github.com/xiaoyaocz/AllLive
-    - name: Install certutil/makecert
+    - name: Install Scoop
       run: |
-        cd AllLive
-        curl -L -o makecert.exe https://github.com/FiloSottile/mkcert/releases/download/v1.4.4/mkcert-v1.4.4-windows-amd64.exe
+        Set-ExecutionPolicy RemoteSigned -Scope Process
+        iex (new-object net.webclient).downloadstring('https://get.scoop.sh')
+    - name: Install makecert and certutil
+      run: scoop install makecert certutil
+
+    - name: Add Scoop to PATH
+      run: |
+        scoop reset
+        scoop bin
+
+    # - name: git clone 
+    #   run: git clone https://github.com/xiaoyaocz/AllLive
+    # - name: Install certutil/makecert
+    #   run: |
+    #     cd AllLive
+    #     curl -L -o makecert.exe https://github.com/FiloSottile/mkcert/releases/download/v1.4.4/mkcert-v1.4.4-windows-amd64.exe
     #     go install github.com/jsws/certutil@latest
     - name: CA
       run: |
         cd AllLive
-        ./makecert.exe -r -pe -n "CN=fans" -b 01/01/2022 -e 01/01/2025 -eku 1.3.6.1.5.5.7.3.3 -ss MY -len 2048 -sp "Microsoft Enhanced RSA and AES Cryptographic Provider" -sy 24 AllLive.cer
-        C:\Windows\System32\certutil.exe -user -exportpfx MY "AllLive" AllLive.pfx
+        makecert.exe -r -pe -n "CN=fans" -b 01/01/2022 -e 01/01/2025 -eku 1.3.6.1.5.5.7.3.3 -ss MY -len 2048 -sp "Microsoft Enhanced RSA and AES Cryptographic Provider" -sy 24 AllLive.cer
+        certutil.exe -user -exportpfx MY "AllLive" AllLive.pfx
     
       
     - name: Restore NuGet packages
