@@ -24,7 +24,8 @@ jobs:
       uses: microsoft/setup-msbuild@v1.0.2
     - name: Install Scoop
       run: |
-        curl -sL https://get.scoop.sh | sh
+        Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+        Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
         scoop install makecert
         scoop install certutil
         setx PATH "%PATH%;%SCOOP_DIR%\bin"
