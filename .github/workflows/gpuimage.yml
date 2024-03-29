@@ -94,14 +94,14 @@ jobs:
       - name: Download iOS SDK
         if: steps.SDK.outputs.cache-hit != 'true'
         run: |
-          cd ${{ github.workspace }}/uYouEnhanced/main
+          cd ./uYouEnhanced/main
           git clone --quiet -n --depth=1 --filter=tree:0 https://github.com/arichornlover/sdks/
           cd sdks
           git sparse-checkout set --no-cone iPhoneOS${{ inputs.sdk_version }}.sdk
           git checkout
           mv *.sdk $THEOS/sdks
         env:
-          THEOS: ${{ github.workspace }}/uYouEnhanced/theos
+          THEOS: ./uYouEnhanced/theos
 
       - name: Setup Theos Jailed
         uses: actions/checkout@v4.1.1
@@ -113,15 +113,15 @@ jobs:
 
       - name: Install Theos Jailed
         run: |
-          cd ${{ github.workspace }}/uYouEnhanced/main
+          cd ./uYouEnhanced/main
           ./theos-jailed/install
         env:
-          THEOS: ${{ github.workspace }}/uYouEnhanced/theos
+          THEOS: ./uYouEnhanced/theos
 
       - name: Prepare YouTube iPA
         id: prepare_youtube
         run: |
-          cd ${{ github.workspace }}/uYouEnhanced/main
+          cd ./uYouEnhanced/main
           wget "$YOUTUBE_URL" --no-verbose -O main/YouTube.ipa
           mv YouTube.ipa YouTube.zip
           unzip -q YouTube.zip
@@ -131,13 +131,13 @@ jobs:
           echo "youtube_version=${youtube_version}" >> $GITHUB_OUTPUT
 
         env:
-          THEOS: ${{ github.workspace }}/uYouEnhanced/theos
+          THEOS: ./uYouEnhanced/theos
           YOUTUBE_URL: ${{ inputs.decrypted_youtube_url }}
 
       - name: Fix compiling & Build Package
         id: build_package
         run: |
-          cd ${{ github.workspace }}/uYouEnhanced/main
+          cd ./uYouEnhanced/main
           sed -i '' "27s#.*#BUNDLE_ID = ${{ env.BUNDLE_ID }}#g" Makefile
           sed -i '' "26s#.*#DISPLAY_NAME = ${{ env.APP_NAME }}#g" Makefile          
           make package THEOS_PACKAGE_SCHEME=rootless IPA=Payload/YouTube.app FINALPACKAGE=1
@@ -146,7 +146,7 @@ jobs:
           echo -e "==> \033[1mBundle ID: ${{ env.BUNDLE_ID }}\033[0m"
 
         env:
-          THEOS: ${{ github.workspace }}/uYouEnhanced/theos
+          THEOS: ./uYouEnhanced/theos
           UYOU_VERSION: ${{ inputs.uyou_version }}
           BUNDLE_ID: ${{ inputs.bundle_id }}
           APP_NAME: ${{ inputs.app_name }}
@@ -159,5 +159,5 @@ jobs:
           YOUTUBE_VERSION: ${{ steps.prepare_youtube.outputs.youtube_version }}
         with:
           name: uYouEnhanced_${{ env.YOUTUBE_VERSION }}_${{ env.UYOU_VERSION }}
-          path: ${{ github.workspace }}/uYouEnhanced/main/packages/${{ steps.build_package.outputs.package }}
+          path: ./uYouEnhanced/main/packages/${{ steps.build_package.outputs.package }}
           if-no-files-found: error
