@@ -94,6 +94,7 @@ jobs:
       - name: Download iOS SDK
         if: steps.SDK.outputs.cache-hit != 'true'
         run: |
+          cd ${{ github.workspace }}/uYouEnhanced/main
           git clone --quiet -n --depth=1 --filter=tree:0 https://github.com/arichornlover/sdks/
           cd sdks
           git sparse-checkout set --no-cone iPhoneOS${{ inputs.sdk_version }}.sdk
@@ -112,6 +113,7 @@ jobs:
 
       - name: Install Theos Jailed
         run: |
+          cd ${{ github.workspace }}/uYouEnhanced/main
           ./theos-jailed/install
         env:
           THEOS: ${{ github.workspace }}/uYouEnhanced/theos
@@ -119,8 +121,8 @@ jobs:
       - name: Prepare YouTube iPA
         id: prepare_youtube
         run: |
-          wget "$YOUTUBE_URL" --no-verbose -O main/YouTube.ipa
           cd ${{ github.workspace }}/uYouEnhanced/main
+          wget "$YOUTUBE_URL" --no-verbose -O main/YouTube.ipa
           mv YouTube.ipa YouTube.zip
           unzip -q YouTube.zip
           youtube_version=$(defaults read "$(pwd)/Payload/YouTube.app/Info" CFBundleVersion)
