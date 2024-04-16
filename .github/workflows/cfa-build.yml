@@ -28,7 +28,7 @@ jobs:
 
     - name: Build the app
       run: |
-        xcodebuild -workspace Clash.xcodeproj -scheme clash -sdk iphoneos -configuration Release build CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
+        xcodebuild -project Clash.xcodeproj -scheme clash -sdk iphoneos -configuration Release build CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
 
     - name: Create IPA directory and move the app
       run: |
