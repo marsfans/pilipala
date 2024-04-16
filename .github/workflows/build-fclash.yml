@@ -63,13 +63,13 @@ jobs:
         with:
           name: fclash-${{ env.VERSION }}-x86_64.exe
           path: ./Output/fclash-meta-${{ env.VERSION }}-x86_64.exe
-      - uses: ncipollo/release-action@v1
-        # if: startsWith(github.ref, 'refs/tags/v')
-        with:
-          tag: v${{ env.VERSION }}
-          allowUpdates: true
-          artifacts: Output/fclash-meta-${{ env.VERSION }}-x86_64.exe
-          token: ${{ secrets.GITHUB_TOKEN }}
+      # - uses: ncipollo/release-action@v1
+      #   # if: startsWith(github.ref, 'refs/tags/v')
+      #   with:
+      #     tag: v${{ env.VERSION }}
+      #     allowUpdates: true
+      #     artifacts: Output/fclash-meta-${{ env.VERSION }}-x86_64.exe
+      #     token: ${{ secrets.GITHUB_TOKEN }}
 
   build-macos-package:
     runs-on: macos-11
@@ -114,13 +114,13 @@ jobs:
         with:
           name: fclash-meta-${{ env.VERSION}}.dmg
           path: fclash-meta-${{ env.VERSION}}.dmg
-      - uses: ncipollo/release-action@v1
-        # if: startsWith(github.ref, 'refs/tags/v')
-        with:
-          tag: v${{ env.VERSION }}
-          allowUpdates: true
-          artifacts: "fclash-meta-${{ env.VERSION}}.dmg"
-          token: ${{ secrets.GITHUB_TOKEN }}
+      # - uses: ncipollo/release-action@v1
+      #   # if: startsWith(github.ref, 'refs/tags/v')
+      #   with:
+      #     tag: v${{ env.VERSION }}
+      #     allowUpdates: true
+      #     artifacts: "fclash-meta-${{ env.VERSION}}.dmg"
+      #     token: ${{ secrets.GITHUB_TOKEN }}
 
 
   build-linux-amd64-deb-package:
@@ -168,13 +168,13 @@ jobs:
         with:
           name: cn.kingtous.fclash-meta-${{ env.VERSION }}-x86_64.deb
           path: ./debian/cn.kingtous.fclash-meta-${{ env.VERSION }}-x86_64.deb
-      - uses: ncipollo/release-action@v1
-        # if: startsWith(github.ref, 'refs/tags/v')
-        with:
-          tag: v${{ env.VERSION }}
-          allowUpdates: true
-          artifacts: "./debian/cn.kingtous.fclash-meta-${{ env.VERSION }}-x86_64.deb"
-          token: ${{ secrets.GITHUB_TOKEN }}
+      # - uses: ncipollo/release-action@v1
+      #   # if: startsWith(github.ref, 'refs/tags/v')
+      #   with:
+      #     tag: v${{ env.VERSION }}
+      #     allowUpdates: true
+      #     artifacts: "./debian/cn.kingtous.fclash-meta-${{ env.VERSION }}-x86_64.deb"
+      #     token: ${{ secrets.GITHUB_TOKEN }}
 
   build-linux-amd64-rpm-package:
     runs-on: ubuntu-20.04
@@ -204,14 +204,17 @@ jobs:
           ./build-deb.sh
           FCLASH_SRC=`pwd` rpmbuild -bb ./rpm.spec
           mv /home/runner/rpmbuild/RPMS/x86_64/FClash-${{ env.VERSION }}-1.x86_64.rpm /home/runner/rpmbuild/RPMS/x86_64/FClash-meta-${{ env.VERSION }}-1.x86_64.rpm
-      
-      - uses: ncipollo/release-action@v1
-        # if: startsWith(github.ref, 'refs/tags/v')
+      - uses: actions/upload-artifact@v3
         with:
-          tag: v${{ env.VERSION }}
-          allowUpdates: true
-          artifacts: "~/rpmbuild/RPMS/x86_64/FClash-meta-${{ env.VERSION }}-*.rpm"
-          token: ${{ secrets.GITHUB_TOKEN }}
+          name: FClash-meta-${{ env.VERSION }}.rpm
+          path: "~/rpmbuild/RPMS/x86_64/FClash-meta-${{ env.VERSION }}-*.rpm"
+      # - uses: ncipollo/release-action@v1
+      #   # if: startsWith(github.ref, 'refs/tags/v')
+      #   with:
+      #     tag: v${{ env.VERSION }}
+      #     allowUpdates: true
+      #     artifacts: "~/rpmbuild/RPMS/x86_64/FClash-meta-${{ env.VERSION }}-*.rpm"
+      #     token: ${{ secrets.GITHUB_TOKEN }}
 
   build-android-arm64v8a-package:
     runs-on: ubuntu-20.04
@@ -251,105 +254,106 @@ jobs:
           flutter clean && flutter pub get
           flutter build apk --release --target-platform android-arm64 --split-per-abi
           mv build/app/outputs/flutter-apk/app-arm64-v8a-release.apk fclash-meta-${{ env.VERSION}}-arm64-v8a.apk
+          ls
       - uses: actions/upload-artifact@v3
         with:
           name: fclash-${{ env.VERSION}}-arm64-v8a.apk
-          path: fclash-${{ env.VERSION}}-arm64-v8a.apk
-      - uses: ncipollo/release-action@v1
-        # if: startsWith(github.ref, 'refs/tags/v')
-        with:
-          tag: v${{ env.VERSION }}
-          allowUpdates: true
-          artifacts: fclash-${{ env.VERSION}}-arm64-v8a.apk
-          token: ${{ secrets.GITHUB_TOKEN }}
+          path: ./fclash-${{ env.VERSION}}-arm64-v8a.apk
+      # - uses: ncipollo/release-action@v1
+      #   # if: startsWith(github.ref, 'refs/tags/v')
+      #   with:
+      #     tag: v${{ env.VERSION }}
+      #     allowUpdates: true
+      #     artifacts: fclash-${{ env.VERSION}}-arm64-v8a.apk
+      #     token: ${{ secrets.GITHUB_TOKEN }}
 
-  build-linux-aarch64-deb-package:
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Check out Git repository
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-          repository: Kingtous/Fclash
-          ref: stable-meta
-      - name: Prepare env
-        run: |
-          sudo apt update -y
-          sudo apt-get -qq install -y git
+  # build-linux-aarch64-deb-package:
+  #   runs-on: ubuntu-20.04
+  #   steps:
+  #     - name: Check out Git repository
+  #       uses: actions/checkout@v3
+  #       with:
+  #         fetch-depth: 0
+  #         repository: Kingtous/Fclash
+  #         ref: stable-meta
+  #     - name: Prepare env
+  #       run: |
+  #         sudo apt update -y
+  #         sudo apt-get -qq install -y git
 
-      - name: Download Flutter
-        shell: bash
-        run: |
-          # disable git safe.directory
-          git config --global --add safe.directory "*"
-          pushd /opt
-          # clone repo and reset to flutter ${{ env.FLUTTER_BASE_VERSION }}
-          git clone https://github.com/sony/flutter-elinux.git || true
-          pushd flutter-elinux
-            # reset to flutter ${{ env.FLUTTER_BASE_VERSION }}
-            git fetch
-            git reset --hard ${{ env.FLUTTER_ELINUX_GIT_COMMIT_ID }} 
-          popd
+  #     - name: Download Flutter
+  #       shell: bash
+  #       run: |
+  #         # disable git safe.directory
+  #         git config --global --add safe.directory "*"
+  #         pushd /opt
+  #         # clone repo and reset to flutter ${{ env.FLUTTER_BASE_VERSION }}
+  #         git clone https://github.com/sony/flutter-elinux.git || true
+  #         pushd flutter-elinux
+  #           # reset to flutter ${{ env.FLUTTER_BASE_VERSION }}
+  #           git fetch
+  #           git reset --hard ${{ env.FLUTTER_ELINUX_GIT_COMMIT_ID }} 
+  #         popd
 
-      - uses: Kingtous/run-on-arch-action@amd64-support
-        name: Build fclash binary for arm64
-        id: arm64
-        with:
-          arch: aarch64
-          distro: ubuntu18.04-rustdesk
-          githubToken: ${{ github.token }}
-          setup: |
-            ls -l "${PWD}"
-          dockerRunArgs: |
-            --volume "${PWD}:/workspace"
-            --volume "/opt/flutter-elinux:/opt/flutter-elinux"
-          shell: /bin/bash
-          install: |
-            apt update -y
-            apt-get -qq install -y git cmake g++ gcc build-essential nasm yasm curl unzip xz-utils python3 wget pkg-config ninja-build pkg-config libgtk-3-dev liblzma-dev clang libayatana-appindicator3-dev
-          run: |
-            # disable git safe.directory
-            git config --global --add safe.directory "*"
-            pushd /opt
-            # download go and compile go lib
-            wget https://go.dev/dl/go${{ env.GOLANG_VERSION }}.linux-arm64.tar.gz
-            tar zxf go${{ env.GOLANG_VERSION }}.linux-arm64.tar.gz
-            export PATH=$PATH:/opt/go/bin:/opt/flutter-elinux/bin
-            # Patch arm64
-            flutter-elinux doctor -v
-            flutter-elinux precache --linux
-            # Patch arm64 engine for flutter 3.6.0+
-            pushd /tmp
-            curl -O https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_${{ env.FLUTTER_BASE_VERSION }}-stable.tar.xz
-            tar -xvf flutter_linux_${{ env.FLUTTER_BASE_VERSION }}-stable.tar.xz flutter/bin/cache/artifacts/engine/linux-x64/shader_lib
-            cp -R flutter/bin/cache/artifacts/engine/linux-x64/shader_lib /opt/flutter-elinux/flutter/bin/cache/artifacts/engine/linux-arm64
-            popd
-            # Build
-            pushd /workspace
-            # we use flutter-elinux to build our rustdesk
-            sed -i "s/flutter build linux --release/flutter-elinux build linux/g" ./build-deb.sh
-            sed -i "s/linux\/x64/linux\/arm64/g" ./build-deb.sh
-            python3 build-clash-lib.py
-            popd
-            flutter-elinux doctor -v
-            # patch control
-            pushd /workspace
-            sed -i "s/Architecture: amd64/Architecture: arm64/g" ./debian/build-src/DEBIAN/control
-            sed -i "s/Architecture: amd64/Architecture: arm64/g" ./debian/DEBIAN/control
-            ./build-deb.sh
+  #     - uses: Kingtous/run-on-arch-action@amd64-support
+  #       name: Build fclash binary for arm64
+  #       id: arm64
+  #       with:
+  #         arch: aarch64
+  #         distro: ubuntu18.04-rustdesk
+  #         githubToken: ${{ github.token }}
+  #         setup: |
+  #           ls -l "${PWD}"
+  #         dockerRunArgs: |
+  #           --volume "${PWD}:/workspace"
+  #           --volume "/opt/flutter-elinux:/opt/flutter-elinux"
+  #         shell: /bin/bash
+  #         install: |
+  #           apt update -y
+  #           apt-get -qq install -y git cmake g++ gcc build-essential nasm yasm curl unzip xz-utils python3 wget pkg-config ninja-build pkg-config libgtk-3-dev liblzma-dev clang libayatana-appindicator3-dev
+  #         run: |
+  #           # disable git safe.directory
+  #           git config --global --add safe.directory "*"
+  #           pushd /opt
+  #           # download go and compile go lib
+  #           wget https://go.dev/dl/go${{ env.GOLANG_VERSION }}.linux-arm64.tar.gz
+  #           tar zxf go${{ env.GOLANG_VERSION }}.linux-arm64.tar.gz
+  #           export PATH=$PATH:/opt/go/bin:/opt/flutter-elinux/bin
+  #           # Patch arm64
+  #           flutter-elinux doctor -v
+  #           flutter-elinux precache --linux
+  #           # Patch arm64 engine for flutter 3.6.0+
+  #           pushd /tmp
+  #           curl -O https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_${{ env.FLUTTER_BASE_VERSION }}-stable.tar.xz
+  #           tar -xvf flutter_linux_${{ env.FLUTTER_BASE_VERSION }}-stable.tar.xz flutter/bin/cache/artifacts/engine/linux-x64/shader_lib
+  #           cp -R flutter/bin/cache/artifacts/engine/linux-x64/shader_lib /opt/flutter-elinux/flutter/bin/cache/artifacts/engine/linux-arm64
+  #           popd
+  #           # Build
+  #           pushd /workspace
+  #           # we use flutter-elinux to build our rustdesk
+  #           sed -i "s/flutter build linux --release/flutter-elinux build linux/g" ./build-deb.sh
+  #           sed -i "s/linux\/x64/linux\/arm64/g" ./build-deb.sh
+  #           python3 build-clash-lib.py
+  #           popd
+  #           flutter-elinux doctor -v
+  #           # patch control
+  #           pushd /workspace
+  #           sed -i "s/Architecture: amd64/Architecture: arm64/g" ./debian/build-src/DEBIAN/control
+  #           sed -i "s/Architecture: amd64/Architecture: arm64/g" ./debian/DEBIAN/control
+  #           ./build-deb.sh
 
-      - name: Rename deb package
-        run: |
-          mv ./debian/cn.kingtous.fclash.deb ./debian/cn.kingtous.fclash-${{ env.VERSION }}-aarch64.deb
+  #     - name: Rename deb package
+  #       run: |
+  #         mv ./debian/cn.kingtous.fclash.deb ./debian/cn.kingtous.fclash-${{ env.VERSION }}-aarch64.deb
 
-      - uses: actions/upload-artifact@v3
-        with:
-          name: cn.kingtous.fclash-${{ env.VERSION }}-aarch64.deb
-          path: ./debian/cn.kingtous.fclash-${{ env.VERSION }}-aarch64.deb
-      - uses: ncipollo/release-action@v1
-        # if: startsWith(github.ref, 'refs/tags/v')
-        with:
-          tag: v${{ env.VERSION }}
-          allowUpdates: true
-          artifacts: "./debian/cn.kingtous.fclash-${{ env.VERSION }}-aarch64.deb"
-          token: ${{ secrets.GITHUB_TOKEN }}
+  #     - uses: actions/upload-artifact@v3
+  #       with:
+  #         name: cn.kingtous.fclash-${{ env.VERSION }}-aarch64.deb
+  #         path: ./debian/cn.kingtous.fclash-${{ env.VERSION }}-aarch64.deb
+  #     - uses: ncipollo/release-action@v1
+  #       # if: startsWith(github.ref, 'refs/tags/v')
+  #       with:
+  #         tag: v${{ env.VERSION }}
+  #         allowUpdates: true
+  #         artifacts: "./debian/cn.kingtous.fclash-${{ env.VERSION }}-aarch64.deb"
+  #         token: ${{ secrets.GITHUB_TOKEN }}
