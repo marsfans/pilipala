@@ -19,7 +19,7 @@ jobs:
     - name: Set up Xcode
       uses: maxim-lobanov/setup-xcode@v1
       with:
-        xcode-version:请根据需要选择合适的Xcode版本
+        xcode-version: latest-stable
 
     - name: Install dependencies
       run: |
