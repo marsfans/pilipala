@@ -58,11 +58,16 @@ jobs:
         run: |
           pushd ./Output
           mv fclash-x86_64.exe fclash-meta-${{ env.VERSION }}-x86_64.exe
-
+      - name: portable package
+        shell: bash
+        run: |
+          zip -r ./fclash-meta-${{ env.VERSION }}-x86_64-portable.zip ./build/windows/runner/Release/ 
       - uses: actions/upload-artifact@v3
         with:
-          name: fclash-${{ env.VERSION }}-x86_64.exe
-          path: ./Output/fclash-meta-${{ env.VERSION }}-x86_64.exe
+          # name: fclash-${{ env.VERSION }}-x86_64.exe
+          # path: ./Output/fclash-meta-${{ env.VERSION }}-x86_64.exe
+          name: fclash-${{ env.VERSION }}-x86_64-portable
+          path: ./fclash-meta-${{ env.VERSION }}-x86_64-portable.zip
       # - uses: ncipollo/release-action@v1
       #   # if: startsWith(github.ref, 'refs/tags/v')
       #   with:
@@ -257,8 +262,8 @@ jobs:
           ls
       - uses: actions/upload-artifact@v3
         with:
-          name: fclash-${{ env.VERSION}}-arm64-v8a.apk
-          path: ./fclash-${{ env.VERSION}}-arm64-v8a.apk
+          name: fclash-meta-${{ env.VERSION}}-arm64-v8a.apk
+          path: fclash-meta-${{ env.VERSION}}-arm64-v8a.apk
       # - uses: ncipollo/release-action@v1
       #   # if: startsWith(github.ref, 'refs/tags/v')
       #   with:
