@@ -26,8 +26,8 @@ jobs:
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj', '**/Directory.Packages.props') }}
      # - name: 'Restore, Build and Test'
      #   run: ./build.cmd
-      - name: Setup MSIX Packaging Tools
-        uses: microsoft/setup-msix-packaging-tools@v1
+    #  - name: Setup MSIX Packaging Tools
+    #    uses: microsoft/setup-msix-packaging-tools@v1
       
       - name: Restore dependencies
         run: |
@@ -38,21 +38,21 @@ jobs:
         run: |
          msbuild ./DevToys-Windows.sln /p:Configuration=Release /p:Platform=x64
 
-      - name: Create MSIX Package
-        run: |
-          MakeAppx pack -d ./bin/Release -p ./bin/Release/DevToys.msix -o
+     # - name: Create MSIX Package
+      #  run: |
+       #   MakeAppx pack -d ./bin/Release -p ./bin/Release/DevToys.msix -o
 
       - name: Zip artifacts
         uses: montudor/action-zip@v0.2.0
         with:
-          args: './bin/Release/DevToys.zip ./bin/Release/'
+          args: zip -qq -r ./bin/Release/DevToys.zip ./bin/Release/
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
         with:
           name: DevToys-artifacts
           path: |
-            ./bin/Release/DevToys.msix
+           # ./bin/Release/DevToys.msix
             ./bin/Release/DevToys.zip
   ubuntu-latest:
     name: ubuntu-latest
