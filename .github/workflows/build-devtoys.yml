@@ -29,11 +29,11 @@ jobs:
     #  - name: Setup MSIX Packaging Tools
     #    uses: microsoft/setup-msix-packaging-tools@v1
       
-      - name: Restore dependencies
-        run: |
-         ls
-         cd ./src
-         nuget restore
+      # - name: Restore dependencies
+      #   run: |
+      #    ls
+      #    cd ./src
+      #    nuget restore
 
       - name: Build
         run: |
