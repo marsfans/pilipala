@@ -40,7 +40,7 @@ jobs:
 
       - name: Build
         run: |
-         ./build.sh
+         ./build.ps1
 
      # - name: Create MSIX Package
       #  run: |
