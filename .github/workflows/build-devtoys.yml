@@ -17,6 +17,8 @@ jobs:
           fetch-depth: 0
           repository: DevToys-app/DevToys
           ref: main
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v1
       - name: 'Cache: .nuke/temp, ~/.nuget/packages'
         uses: actions/cache@v3
         with:
@@ -36,7 +38,7 @@ jobs:
 
       - name: Build
         run: |
-          ./DevToys-Windows.sln /p:Configuration=Release /p:Platform=x64
+         dotnet ./DevToys-Windows.sln /p:Configuration=Release /p:Platform=x64
 
      # - name: Create MSIX Package
       #  run: |
