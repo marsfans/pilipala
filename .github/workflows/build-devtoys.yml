@@ -31,7 +31,7 @@ jobs:
       
       - name: Restore dependencies
         run: |
-        ls
+         ls
          cd ./src
          nuget restore
 
