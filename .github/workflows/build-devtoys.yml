@@ -43,7 +43,7 @@ jobs:
        #   MakeAppx pack -d ./bin/Release -p ./bin/Release/DevToys.msix -o
 
       - name: Zip artifacts
-        uses: montudor/action-zip@v0.2.0
+        uses: montudor/action-zip@v1
         with:
           args: zip -qq -r ./bin/Release/DevToys.zip ./bin/Release/
 
