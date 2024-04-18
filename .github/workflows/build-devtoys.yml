@@ -42,8 +42,8 @@ jobs:
         run: |
           ./vs2022.vsconfig
           ./init.ps1
-          dotnet ./src/DevToys.sln
-          dotnet ./src/dev/DevToys.Startup/DevToys.Startup.wapproj
+          dotnet src/DevToys.sln
+          dotnet src/dev/DevToys.Startup/DevToys.Startup.wapproj
 
      # - name: Create MSIX Package
       #  run: |
