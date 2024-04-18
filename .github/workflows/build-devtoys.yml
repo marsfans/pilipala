@@ -19,6 +19,8 @@ jobs:
           ref: main
       - name: Set up .NET
         uses: actions/setup-dotnet@v1
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
       - name: 'Cache: .nuke/temp, ~/.nuget/packages'
         uses: actions/cache@v3
         with:
@@ -38,7 +40,7 @@ jobs:
 
       - name: Build
         run: |
-         dotnet ./DevToys-Windows.sln /p:Configuration=Release /p:Platform=x64
+         msbuild ./DevToys-Windows.sln /p:Configuration=Release /p:Platform=x64
 
      # - name: Create MSIX Package
       #  run: |
