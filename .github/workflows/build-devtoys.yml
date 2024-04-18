@@ -28,18 +28,14 @@ jobs:
             .nuke/temp
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj', '**/Directory.Packages.props') }}
-     # - name: 'Restore, Build and Test'
-     #   run: ./build.cmd
-    #  - name: Setup MSIX Packaging Tools
-    #    uses: microsoft/setup-msix-packaging-tools@v1
-      
-      # - name: Restore dependencies
-      #   run: |
-      #    cd ./src
-      #    nuget restore
+     - name: Add MSBuild to PATH
+       run: |
+         $env:Path += ";C:\Program Files (x86)\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin"
+
 
       - name: Build
         run: |
+          dotnet tool install Nuke.GlobalTool --global
           ./vs2022.vsconfig
           ./init.ps1
           dotnet src/DevToys-Windows.sln
