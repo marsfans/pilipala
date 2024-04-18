@@ -41,7 +41,7 @@ jobs:
       - name: Build
         run: |
         #  msbuild ./DevToys-Windows.sln /p:Configuration=Release /p:Platform=x64
-          ./build.sh
+         ./build.sh
 
      # - name: Create MSIX Package
       #  run: |
