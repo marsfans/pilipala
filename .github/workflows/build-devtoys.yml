@@ -33,14 +33,15 @@ jobs:
     #  - name: Setup MSIX Packaging Tools
     #    uses: microsoft/setup-msix-packaging-tools@v1
       
-      - name: Restore dependencies
-        run: |
-         cd ./src
+      # - name: Restore dependencies
+      #   run: |
+      #    cd ./src
       #    nuget restore
 
       - name: Build
         run: |
-         msbuild ./DevToys-Windows.sln /p:Configuration=Release /p:Platform=x64
+        #  msbuild ./DevToys-Windows.sln /p:Configuration=Release /p:Platform=x64
+          ./build.sh
 
      # - name: Create MSIX Package
       #  run: |
