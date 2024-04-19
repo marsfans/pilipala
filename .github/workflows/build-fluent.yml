@@ -22,7 +22,7 @@ jobs:
       uses: subosito/flutter-action@v2
       with:
         channel: stable
-        flutter-version: 2.12.0
+        flutter-version: 2.x
     - name: Get Dependencies
       run: |
         # cd ./fluent-reader-lite
