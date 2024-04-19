@@ -22,12 +22,10 @@ jobs:
       uses: subosito/flutter-action@v2
       with:
         channel: stable
-        flutter-version: 3.19.0
-    - name: git clone
-      run: git clone https://github.com/yang991178/fluent-reader-lite
+        flutter-version: 2.12.0
     - name: Get Dependencies
       run: |
-        cd ./fluent-reader-lite
+        # cd ./fluent-reader-lite
         flutter pub get
 
     - name: Build for Android
