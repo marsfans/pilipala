@@ -23,7 +23,7 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: localsend-rs-windows
-          path: target/release/localsend-rs*
+          path: target/release/*
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
@@ -33,7 +33,7 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: localsend-rs-macos
-          path: target/release/localsend-rs*
+          path: target/release/*
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
@@ -43,4 +43,4 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: localsend-rs-macos
-          path: target/release/localsend-rs*
+          path: target/release/*
