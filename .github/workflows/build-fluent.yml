@@ -1,4 +1,4 @@
-name: Build flutter rss
+name: Build localsend-rs
 
 on:
   push:
@@ -8,43 +8,51 @@ on:
 
 jobs:
   build:
-    name: Build for iOS and Android
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v2
       with:
         fetch-depth: 0
-        repository: yang991178/fluent-reader-lite
-        ref: master
-
-    - name: Set up Flutter
-      uses: subosito/flutter-action@v2
+        repository: zpp0196/localsend-rs
+        ref: main
+    - name: Set up Rust
+      uses: actions/setup-rust@v1
       with:
-        channel: stable
-        # flutter-version: 3.19.0
-        # flutter-version: 2.x
-    #- name: git clone
-      #run: git clone https://github.com/yang991178/fluent-reader-lite
-    - name: Get Dependencies
-      run: flutter pub get
+        rust-version: stable
 
-    - name: Build for Android
-      run: flutter build apk
+    - name: Install dependencies
+      run: cargo fetch
 
-    - name: Build for iOS
-      run: flutter build ios --release --no-codesign
-    - name: create ipa
-      run: |
-        mkdir Payload
-        cp -R build/ios/iphoneos/Runner.app Payload/
-        zip -r flutter-reader.ipa Payload
-    - name: Archive iOS App
+    - name: Build for Windows
+      run: cargo build --release --target=x86_64-pc-windows-msvc
+    - name: Archive Windows binary
       uses: actions/upload-artifact@v2
       with:
-        name: flutter-reader-ios
-        path: ./flutter-reader.ipa
-    
+        name: localsend-rs-windows
+        path: target/x86_64-pc-windows-msvc/release/localsend-rs*
 
+    - name: Build for macOS
+      run: cargo build --release --target=x86_64-apple-darwin
+    - name: Archive macOS binary
+      uses: actions/upload-artifact@v2
+      with:
+        name: localsend-rs-macos
+        path: target/x86_64-apple-darwin/release/localsend-rs*
 
-
+    - name: Build for Linux
+      run: cargo build --release --target=x86_64-unknown-linux-gnu
+    - name: Archive Linux binary
+      uses: actions/upload-artifact@v2
+      with:
+        name: localsend-rs-linux
+        path: target/x86_64-unknown-linux-gnu/release/localsend-rs*
+    # - name: Publish artifacts
+    #   uses: actions/upload-artifact@v2
+    #   with:
+    #     name: myapp-artifacts
+    #     path: |
+    #       target/x86_64-pc-windows-msvc/release/myapp.exe
+    #       target/x86_64-apple-darwin/release/myapp
+    #       target/x86_64-unknown-linux-gnu/release/myapp
