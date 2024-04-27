@@ -1,56 +1,46 @@
-name: Build localsend-rs
+name: Compile and Upload localsend-rs
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
   workflow_dispatch:
-
+  
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
-        repository: zpp0196/localsend-rs
-        ref: main
-    - name: Set up Rust
-      uses: actions-rust-lang/setup-rust-toolchain@v1
-
-    - name: Install dependencies
-      run: cargo fetch
-
-    - name: Build for Windows
-      run: cargo build --release --target=x86_64-pc-windows-msvc
-    - name: Archive Windows binary
-      uses: actions/upload-artifact@v2
-      with:
-        name: localsend-rs-windows
-        path: target/x86_64-pc-windows-msvc/release/localsend-rs*
-
-    - name: Build for macOS
-      run: cargo build --release --target=x86_64-apple-darwin
-    - name: Archive macOS binary
-      uses: actions/upload-artifact@v2
-      with:
-        name: localsend-rs-macos
-        path: target/x86_64-apple-darwin/release/localsend-rs*
-
-    - name: Build for Linux
-      run: cargo build --release --target=x86_64-unknown-linux-gnu
-    - name: Archive Linux binary
-      uses: actions/upload-artifact@v2
-      with:
-        name: localsend-rs-linux
-        path: target/x86_64-unknown-linux-gnu/release/localsend-rs*
-    # - name: Publish artifacts
-    #   uses: actions/upload-artifact@v2
-    #   with:
-    #     name: myapp-artifacts
-    #     path: |
-    #       target/x86_64-pc-windows-msvc/release/myapp.exe
-    #       target/x86_64-apple-darwin/release/myapp
-    #       target/x86_64-unknown-linux-gnu/release/myapp
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          repository: zpp0196/localsend-rs
+          ref: main
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: x86_64-pc-windows-msvc
+          override: true
+      - run: cargo build --release
+      - uses: actions/upload-artifact@v3
+        with:
+          name: localsend-rs-windows
+          path: target/release/localsend-rs*
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: x86_64-apple-darwin
+          override: true
+      - run: cargo build --release
+      - uses: actions/upload-artifact@v3
+        with:
+          name: localsend-rs-macos
+          path: target/release/localsend-rs*
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: x86_64-unknown-linux-gnu
+          override: true
+      - run: cargo build --release
+      - uses: actions/upload-artifact@v3
+        with:
+          name: localsend-rs-macos
+          path: target/release/localsend-rs*
