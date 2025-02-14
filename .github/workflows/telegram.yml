@@ -95,14 +95,19 @@ jobs:
           fetch-depth: 0
 
       - name: Install dependencies
-        run: brew install cmake python3 git qt@6 ada
+        run: brew install cmake python3 git qt@6 automake wget pkg-config gnu-tar ninja nasm meson
 
       - name: Build macOS App
         run: |
-          mkdir build
-          cd build
-          cmake -DCMAKE_OSX_ARCHITECTURES=x86_64 ..
-          cmake --build . --parallel
+          sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+          git clone --recursive .
+          ./Telegram/build/prepare/mac.sh
+          cd BuildPath/tdesktop/Telegram
+          ./configure.sh -D TDESKTOP_API_ID=${{ secrets.API_ID }} -D TDESKTOP_API_HASH=${{ secrets.API_HASH }}
+          # mkdir build
+          # cd build
+          # cmake -DCMAKE_OSX_ARCHITECTURES=x86_64 ..
+          # cmake --build . --parallel
 
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
@@ -133,10 +138,14 @@ jobs:
 
       - name: Build Windows App
         run: |
-          mkdir build
-          cd build
-          cmake -G "Visual Studio 16 2019" -A x64 ..
-          cmake --build . --config Release --parallel
+          git clone --recursive .
+          ./Telegram/build/prepare/win.bat
+          cd BuildPath/tdesktop/Telegram
+          ./configure.bat x64 -D TDESKTOP_API_ID=${{ secrets.API_ID }} -D TDESKTOP_API_HASH=${{ secrets.API_HASH }}
+          # mkdir build
+          # cd build
+          # cmake -G "Visual Studio 16 2019" -A x64 ..
+          # cmake --build . --config Release --parallel
 
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
