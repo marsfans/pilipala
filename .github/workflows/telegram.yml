@@ -95,7 +95,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install dependencies
-        run: brew install cmake python3 git qt@6
+        run: brew install cmake python3 git qt@6 ada
 
       - name: Build macOS App
         run: |
