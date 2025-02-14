@@ -1,0 +1,195 @@
+name: Build and Release Telegram
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # 触发版本发布的 Git 标签，例如 v1.0.0
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  extract-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.VERSION }}
+    steps:
+      - name: Checkout Telegram Source Code
+        uses: actions/checkout@v2
+        with:
+          repository: "telegramdesktop/tdesktop" # Telegram 桌面版源码
+          submodules: true
+          fetch-depth: 0
+
+      - name: Get Telegram Version
+        id: get_version
+        run: |
+          VERSION=$(cat Telegram/version.txt || echo "unknown")
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "::set-output name=VERSION::$VERSION"
+
+  build-android:
+    needs: extract-version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Telegram Android Source Code
+        uses: actions/checkout@v2
+        with:
+          repository: "DrKLO/Telegram" # Telegram Android 版源码
+          submodules: true
+          fetch-depth: 0
+
+      - name: Set up JDK
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'zulu'
+          java-version: '11'
+
+      - name: Install Android SDK
+        uses: android-actions/setup-android@v2
+
+      - name: Build Android APK
+        run: ./gradlew assembleRelease
+
+      - name: Upload Android artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: telegram-android-${{ env.VERSION }}.apk
+          path: app/build/outputs/apk/release/app-release.apk
+
+  build-ios:
+    needs: extract-version
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Telegram iOS Source Code
+        uses: actions/checkout@v2
+        with:
+          repository: "TelegramMessenger/Telegram-iOS"
+          submodules: true
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: brew install bazel python3 git
+
+      - name: Build iOS App
+        run: |
+          bazel build //Telegram:Telegram
+          mkdir -p output
+          cp -r bazel-bin/Telegram/Telegram.ipa output/
+
+      - name: Upload iOS artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: telegram-ios-${{ env.VERSION }}.ipa
+          path: output/Telegram.ipa
+
+  build-macos:
+    needs: extract-version
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Telegram macOS Source Code
+        uses: actions/checkout@v2
+        with:
+          repository: "telegramdesktop/tdesktop"
+          submodules: true
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: brew install cmake python3 git
+
+      - name: Build macOS App
+        run: |
+          mkdir build
+          cd build
+          cmake -DCMAKE_OSX_ARCHITECTURES=x86_64 ..
+          cmake --build . --parallel
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: telegram-macos-${{ env.VERSION }}.app
+          path: tdesktop/build/bin/Telegram.app
+
+  build-windows:
+    needs: extract-version
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Telegram Windows Source Code
+        uses: actions/checkout@v2
+        with:
+          repository: "telegramdesktop/tdesktop"
+          submodules: true
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: |
+          choco install cmake python git visualstudio2019community visualstudio2019-workload-nativedesktop --yes
+
+      - name: Build Windows App
+        run: |
+          mkdir build
+          cd build
+          cmake -G "Visual Studio 16 2019" -A x64 ..
+          cmake --build . --config Release --parallel
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: telegram-windows-${{ env.VERSION }}.exe
+          path: tdesktop/build/bin/Release/Telegram.exe
+
+  release:
+    needs: [extract-version, build-android, build-ios, build-macos, build-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v2
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ env.VERSION }}
+          release_name: Release v${{ env.VERSION }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Android APK to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: app/build/outputs/apk/release/app-release.apk
+          asset_name: telegram-android-${{ env.VERSION }}.apk
+          asset_content_type: application/vnd.android.package-archive
+
+      - name: Upload iOS IPA to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: output/Telegram.ipa
+          asset_name: telegram-ios-${{ env.VERSION }}.ipa
+          asset_content_type: application/octet-stream
+
+      - name: Upload macOS App to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: tdesktop/build/bin/Telegram.app
+          asset_name: telegram-macos-${{ env.VERSION }}.zip
+          asset_content_type: application/zip
+
+      - name: Upload Windows App to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: tdesktop/build/bin/Release/Telegram.exe
+          asset_name: telegram-windows-${{ env.VERSION }}.exe
+          asset_content_type: application/vnd.microsoft.portable-executable
