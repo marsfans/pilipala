@@ -134,7 +134,7 @@ jobs:
       
       - name: Install dependencies
         run: |
-          choco install cmake git visualstudio2019community visualstudio2019-workload-nativedesktop --yes
+          choco install cmake git visualstudio2019community visualstudio2019-workload-nativedesktop automake wget pkgconfig gnutar ninja nasm meson --yes
 
       - name: Build Windows App
         run: |
