@@ -65,7 +65,9 @@ jobs:
           repository: "TelegramMessenger/Telegram-iOS"
           submodules: true
           fetch-depth: 0
-
+      - name: Unlink bazelisk
+        run: |
+          brew unlink bazelisk
       - name: Install dependencies
         run: brew install bazel python3 git
 
