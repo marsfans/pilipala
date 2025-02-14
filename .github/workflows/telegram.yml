@@ -100,7 +100,7 @@ jobs:
       - name: Build macOS App
         run: |
           sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
-          git clone --recursive .
+          # git clone --recursive .
           ./Telegram/build/prepare/mac.sh
           cd BuildPath/tdesktop/Telegram
           ./configure.sh -D TDESKTOP_API_ID=${{ secrets.API_ID }} -D TDESKTOP_API_HASH=${{ secrets.API_HASH }}
@@ -138,7 +138,7 @@ jobs:
 
       - name: Build Windows App
         run: |
-          git clone --recursive .
+          # git clone --recursive .
           ./Telegram/build/prepare/win.bat
           cd BuildPath/tdesktop/Telegram
           ./configure.bat x64 -D TDESKTOP_API_ID=${{ secrets.API_ID }} -D TDESKTOP_API_HASH=${{ secrets.API_HASH }}
