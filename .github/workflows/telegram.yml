@@ -47,13 +47,18 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Build Android APK
-        run: ./gradlew assembleRelease
-
+        run: |
+          apt install tree
+          # ./gradlew assembleRelease
+          docker build -t telegram-build .
+          docker run --rm -v "$PWD":/home/source telegram-build
+          tree
+          
       - name: Upload Android artifact
         uses: actions/upload-artifact@v4
         with:
           name: telegram-android-${{ env.VERSION }}.apk
-          path: app/build/outputs/apk/release/app-release.apk
+          path: apk/afat/standalone/*.apk
 
   build-ios:
     needs: extract-version
@@ -65,23 +70,70 @@ jobs:
           repository: "TelegramMessenger/Telegram-iOS"
           submodules: true
           fetch-depth: 0
+      - name: Set active Xcode path
+        run: |
+          XCODE_VERSION=$(cat versions.json | python3 -c 'import json,sys;obj=json.load(sys.stdin);print(obj["xcode"]);')
+          sudo xcode-select -s /Applications/Xcode_$XCODE_VERSION.app/Contents/Developer
+
+      - name: Create canonical source directory
+        run: |
+          set -x
+          sudo mkdir -p /Users/Shared
+          cp -R $GITHUB_WORKSPACE /Users/Shared/
+          mv /Users/Shared/$(basename $GITHUB_WORKSPACE) /Users/Shared/telegram-ios
+          
       - name: Unlink bazelisk
         run: |
           brew unlink bazelisk
       - name: Install dependencies
-        run: brew install bazel python3 git
+        run: brew install bazel python3 git tree
 
       - name: Build iOS App
         run: |
-          bazel build //Telegram:Telegram
-          mkdir -p output
-          cp -r bazel-bin/Telegram/Telegram.ipa output/
+          # bazel build //Telegram:Telegram
+          # mkdir -p output
+          # cp -r bazel-bin/Telegram/Telegram.ipa output/
+          set -x
+
+          # source code paths are included in the final binary, so we need to make them stable across builds
+          SOURCE_DIR=/Users/Shared/telegram-ios
+
+          # use canonical bazel root
+          BAZEL_USER_ROOT="/private/var/tmp/_bazel_containerhost"
+
+          cd $SOURCE_DIR
+
+          BUILD_NUMBER_OFFSET="$(cat build_number_offset)"
+          
+          export APP_VERSION=$(cat versions.json | python3 -c 'import json,sys;obj=json.load(sys.stdin);print(obj["app"]);')
+          export COMMIT_COUNT=$(git rev-list --count HEAD)
+          export COMMIT_COUNT="$(($COMMIT_COUNT+$BUILD_NUMBER_OFFSET))"
+          export BUILD_NUMBER="$COMMIT_COUNT"
+          echo "BUILD_NUMBER=$(echo $BUILD_NUMBER)" >> $GITHUB_ENV
+          echo "APP_VERSION=$(echo $APP_VERSION)" >> $GITHUB_ENV
+          python3 build-system/Make/ImportCertificates.py --path build-system/fake-codesigning/certs
+          python3 -u build-system/Make/Make.py \
+            --bazelUserRoot="$BAZEL_USER_ROOT" \
+            build \
+            --configurationPath="build-system/appstore-configuration.json" \
+            --codesigningInformationPath=build-system/fake-codesigning \
+            --configuration=release_arm64 \
+            --buildNumber="$BUILD_NUMBER"
+
+          # collect ipa
+          OUTPUT_PATH="build/artifacts"
+          rm -rf "$OUTPUT_PATH"
+          mkdir -p "$OUTPUT_PATH"
+          for f in bazel-out/applebin_ios-ios_arm*-opt-ST-*/bin/Telegram/Telegram.ipa; do
+            cp "$f" $OUTPUT_PATH/
+          done
+          cd - && tree
 
       - name: Upload iOS artifact
         uses: actions/upload-artifact@v4
         with:
           name: telegram-ios-${{ env.VERSION }}.ipa
-          path: output/Telegram.ipa
+          path: build/artifacts/*.ipa
 
   build-macos:
     needs: extract-version
@@ -95,7 +147,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install dependencies
-        run: brew install cmake python3 git qt@6 automake wget pkg-config gnu-tar ninja nasm meson
+        run: brew install cmake python3 git qt@6 automake wget pkg-config gnu-tar ninja nasm meson tree
 
       - name: Build macOS App
         run: |
@@ -104,6 +156,7 @@ jobs:
           ./Telegram/build/prepare/mac.sh
           cd ./Telegram
           ./configure.sh -D TDESKTOP_API_ID=${{ secrets.API_ID }} -D TDESKTOP_API_HASH=${{ secrets.API_HASH }}
+          cd - && tree
           # mkdir build
           # cd build
           # cmake -DCMAKE_OSX_ARCHITECTURES=x86_64 ..
@@ -134,7 +187,7 @@ jobs:
       
       - name: Install dependencies
         run: |
-          choco install cmake git visualstudio2019community visualstudio2019-workload-nativedesktop automake wget pkgconfig gnutar ninja nasm meson --yes
+          choco install cmake git automake wget pkgconfig gnutar ninja nasm meson --yes # visualstudio2019community visualstudio2019-workload-nativedesktop
 
       - name: Build Windows App
         run: |
@@ -142,6 +195,7 @@ jobs:
           ./Telegram/build/prepare/win.bat
           cd ./Telegram
           ./configure.bat x64 -D TDESKTOP_API_ID=${{ secrets.API_ID }} -D TDESKTOP_API_HASH=${{ secrets.API_HASH }}
+          cd .. && tree
           # mkdir build
           # cd build
           # cmake -G "Visual Studio 16 2019" -A x64 ..
@@ -177,7 +231,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: app/build/outputs/apk/release/app-release.apk
+          asset_path: apk/afat/standalone/*.apk
           asset_name: telegram-android-${{ env.VERSION }}.apk
           asset_content_type: application/vnd.android.package-archive
 
@@ -187,7 +241,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: output/Telegram.ipa
+          asset_path: build/artifacts/*.ipa
           asset_name: telegram-ios-${{ env.VERSION }}.ipa
           asset_content_type: application/octet-stream
 
