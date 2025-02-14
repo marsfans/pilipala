@@ -123,6 +123,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
+          
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+      
       - name: Install dependencies
         run: |
           choco install cmake git visualstudio2019community visualstudio2019-workload-nativedesktop --yes
