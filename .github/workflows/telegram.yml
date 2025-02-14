@@ -102,7 +102,7 @@ jobs:
           sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
           # git clone --recursive .
           ./Telegram/build/prepare/mac.sh
-          cd BuildPath/tdesktop/Telegram
+          cd ./Telegram
           ./configure.sh -D TDESKTOP_API_ID=${{ secrets.API_ID }} -D TDESKTOP_API_HASH=${{ secrets.API_HASH }}
           # mkdir build
           # cd build
@@ -113,7 +113,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: telegram-macos-${{ env.VERSION }}.app
-          path: tdesktop/build/bin/Telegram.app
+          path: Telegram/build/bin/Telegram.app
 
   build-windows:
     needs: extract-version
@@ -140,7 +140,7 @@ jobs:
         run: |
           # git clone --recursive .
           ./Telegram/build/prepare/win.bat
-          cd BuildPath/tdesktop/Telegram
+          cd ./Telegram
           ./configure.bat x64 -D TDESKTOP_API_ID=${{ secrets.API_ID }} -D TDESKTOP_API_HASH=${{ secrets.API_HASH }}
           # mkdir build
           # cd build
@@ -151,7 +151,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: telegram-windows-${{ env.VERSION }}.exe
-          path: tdesktop/build/bin/Release/Telegram.exe
+          path: Telegram/build/bin/Release/Telegram.exe
 
   release:
     needs: [extract-version, build-android, build-ios, build-macos, build-windows]
@@ -197,7 +197,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: tdesktop/build/bin/Telegram.app
+          asset_path: Telegram/build/bin/Telegram.app
           asset_name: telegram-macos-${{ env.VERSION }}.zip
           asset_content_type: application/zip
 
@@ -207,6 +207,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: tdesktop/build/bin/Release/Telegram.exe
+          asset_path: Telegram/build/bin/Release/Telegram.exe
           asset_name: telegram-windows-${{ env.VERSION }}.exe
           asset_content_type: application/vnd.microsoft.portable-executable
