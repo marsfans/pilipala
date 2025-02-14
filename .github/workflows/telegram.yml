@@ -50,7 +50,7 @@ jobs:
         run: ./gradlew assembleRelease
 
       - name: Upload Android artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: telegram-android-${{ env.VERSION }}.apk
           path: app/build/outputs/apk/release/app-release.apk
@@ -76,7 +76,7 @@ jobs:
           cp -r bazel-bin/Telegram/Telegram.ipa output/
 
       - name: Upload iOS artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: telegram-ios-${{ env.VERSION }}.ipa
           path: output/Telegram.ipa
@@ -131,7 +131,7 @@ jobs:
           cmake --build . --config Release --parallel
 
       - name: Upload Windows artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: telegram-windows-${{ env.VERSION }}.exe
           path: tdesktop/build/bin/Release/Telegram.exe
@@ -141,7 +141,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
 
       - name: Create GitHub Release
         id: create_release
