@@ -120,10 +120,12 @@ jobs:
           repository: "telegramdesktop/tdesktop"
           submodules: true
           fetch-depth: 0
-
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
       - name: Install dependencies
         run: |
-          choco install cmake python git visualstudio2019community visualstudio2019-workload-nativedesktop --yes
+          choco install cmake git visualstudio2019community visualstudio2019-workload-nativedesktop --yes
 
       - name: Build Windows App
         run: |
