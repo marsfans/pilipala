@@ -103,7 +103,7 @@ jobs:
           cmake --build . --parallel
 
       - name: Upload macOS artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: telegram-macos-${{ env.VERSION }}.app
           path: tdesktop/build/bin/Telegram.app
