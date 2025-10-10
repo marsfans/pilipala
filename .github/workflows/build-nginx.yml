@@ -1,16 +1,16 @@
-name: Build Nginx Multi-Platform (Manual Version)
+name: Build Nginx Multi-Platform with PCRE Support
 
 on:
   workflow_dispatch:
     inputs:
       nginx_version:
-        description: "Nginx 版本号（例如 1.26.2）"
+        description: 'Nginx 版本号，例如 1.26.2'
         required: true
-        default: "1.26.2"
+        default: '1.26.2'
 
 jobs:
   build:
-    name: Build for ${{ matrix.os }}-${{ matrix.arch }}
+    name: Build ${{ matrix.os }} / ${{ matrix.arch }}
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -33,37 +33,47 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Linux / macOS 编译
+      # 安装依赖 + PCRE 系统库（Linux / macOS）
       - name: Install dependencies (Linux/macOS)
         if: runner.os != 'Windows'
         run: |
           if [ "$RUNNER_OS" = "Linux" ]; then
             sudo apt-get update
-            sudo apt-get install -y build-essential libpcre3-dev zlib1g-dev libssl-dev wget
+            sudo apt-get install -y build-essential libssl-dev libpcre3 libpcre3-dev zlib1g-dev wget
           elif [ "$RUNNER_OS" = "macOS" ]; then
             brew install pcre openssl zlib wget
           fi
 
-      - name: Build Nginx (Linux/macOS)
+      # 下载 PCRE 源码备用
+      - name: Download PCRE source fallback
         if: runner.os != 'Windows'
         run: |
-          echo "🔹 编译 Nginx 版本: ${{ github.event.inputs.nginx_version }}"
-          wget http://nginx.org/download/nginx-${{ github.event.inputs.nginx_version }}.tar.gz
-          tar zxvf nginx-${{ github.event.inputs.nginx_version }}.tar.gz
-          cd nginx-${{ github.event.inputs.nginx_version }}
+          wget https://ftp.pcre.org/pub/pcre/pcre-8.45.tar.gz
+          tar zxvf pcre-8.45.tar.gz
+
+      # 编译 Nginx（Linux / macOS）
+      - name: Build Nginx (non-Windows)
+        if: runner.os != 'Windows'
+        run: |
+          version=${{ github.event.inputs.nginx_version }}
+          echo "Building Nginx $version on $RUNNER_OS"
+          wget http://nginx.org/download/nginx-$version.tar.gz
+          tar zxvf nginx-$version.tar.gz
+          cd nginx-$version
           ./configure \
             --prefix=/opt/nginx \
             --with-http_ssl_module \
             --with-http_v2_module \
             --with-http_gzip_static_module \
-            --with-stream
+            --with-stream \
+            --with-pcre=../pcre-8.45      # 指定 PCRE 源码路径
           make -j$(nproc || sysctl -n hw.ncpu)
           make install
           cd /opt
-          tar czf nginx-${{ matrix.os }}-${{ matrix.arch }}-${{ github.event.inputs.nginx_version }}.tar.gz nginx
+          tar czf nginx-${{ matrix.os }}-${{ matrix.arch }}-$version.tar.gz nginx
 
-      # Windows (MinGW)
-      - name: Setup MinGW and MSYS2
+      # Windows 平台使用 MSYS2 / MinGW 编译
+      - name: Setup MSYS2 / MinGW (Windows)
         if: runner.os == 'Windows'
         uses: msys2/setup-msys2@v2
         with:
@@ -81,10 +91,11 @@ jobs:
         if: runner.os == 'Windows'
         shell: msys2 {0}
         run: |
-          echo "🔹 编译 Nginx 版本: ${{ github.event.inputs.nginx_version }}"
-          wget http://nginx.org/download/nginx-${{ github.event.inputs.nginx_version }}.tar.gz
-          tar zxvf nginx-${{ github.event.inputs.nginx_version }}.tar.gz
-          cd nginx-${{ github.event.inputs.nginx_version }}
+          version=${{ github.event.inputs.nginx_version }}
+          echo "Building Nginx $version on Windows"
+          wget http://nginx.org/download/nginx-$version.tar.gz
+          tar zxvf nginx-$version.tar.gz
+          cd nginx-$version
           ./configure \
             --prefix=/c/nginx \
             --with-http_ssl_module \
@@ -94,9 +105,9 @@ jobs:
           make -j$(nproc)
           make install
           cd /c
-          tar czf nginx-windows-${{ matrix.arch }}-${{ github.event.inputs.nginx_version }}.tar.gz nginx
+          tar czf nginx-windows-${{ matrix.arch }}-$version.tar.gz nginx
 
-      - name: Upload artifacts
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: nginx-${{ matrix.os }}-${{ matrix.arch }}-${{ github.event.inputs.nginx_version }}
