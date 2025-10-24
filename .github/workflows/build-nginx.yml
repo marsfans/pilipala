@@ -1,124 +1,58 @@
-name: Build & Release Multi-Platform Nginx
+name: Build Nginx (Multi-Platform)
 
 on:
-  push:
-    tags:
-      - "v*"   # 推送标签时自动构建发布，如 v1.26.0
   workflow_dispatch:
     inputs:
       nginx_version:
-        description: "手动指定 Nginx 版本号 (例如: 1.26.0)"
+        description: '指定 Nginx 版本 (例如 1.27.2)'
         required: true
-        default: "1.26.0"
+        default: '1.27.2'
 
 jobs:
   build:
-    name: Build Nginx (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        platform: [linux/amd64, linux/arm64, windows/amd64]
 
     steps:
-      - name: Checkout repo
+      - name: Checkout source
         uses: actions/checkout@v4
 
-      # 获取版本号（tag 或手动输入）
-      - name: Set NGINX version
-        id: set-version
-        run: |
-          if [ -n "${{ github.event.inputs.nginx_version }}" ]; then
-            echo "VERSION=${{ github.event.inputs.nginx_version }}" >> $GITHUB_ENV
-          else
-            echo "VERSION=${GITHUB_REF##*/}" | sed 's/^v//' >> $GITHUB_ENV
-          fi
-        shell: bash
+      - name: Set up QEMU (for cross-platform builds)
+        uses: docker/setup-qemu-action@v3
 
-      - name: Print version
-        run: echo "Building Nginx version: $VERSION"
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      # 下载指定版本源码
-      - name: Download Nginx source
-        run: |
-          curl -O https://nginx.org/download/nginx-$VERSION.tar.gz
-          tar -xzf nginx-$VERSION.tar.gz
-          mv nginx-$VERSION nginx
-
-      # -----------------------------
-      # Linux + macOS 构建
-      # -----------------------------
-      - name: Build on Linux/macOS
-        if: matrix.os != 'windows-latest'
-        run: |
-          sudo apt-get update -y || true
-          sudo apt-get install -y build-essential libpcre3 libpcre3-dev zlib1g-dev libssl-dev git
-          cd nginx
-          git clone https://github.com/google/ngx_brotli.git --recursive modules/ngx_brotli
-          ./auto/configure --with-http_ssl_module --add-module=modules/ngx_brotli
-          make -j$(nproc)
-          mkdir -p ../dist
-          cp ./objs/nginx ../dist/nginx-${{ matrix.os }}-$VERSION
-
-      # -----------------------------
-      # Windows 构建（MSYS2）
-      # -----------------------------
-      - name: Setup MSYS2 for Windows
-        if: matrix.os == 'windows-latest'
-        uses: msys2/setup-msys2@v2
+      - name: Build Nginx for ${{ matrix.platform }}
+        uses: docker/build-push-action@v6
         with:
-          update: true
-          install: >-
-            git
-            make
-            mingw-w64-x86_64-gcc
-            pcre
-            pcre-devel
-            zlib
-            zlib-devel
-            openssl
-            openssl-devel
+          context: .
+          file: ./Dockerfile
+          platforms: ${{ matrix.platform }}
+          push: false
+          build-args:
+            NGINX_VERSION: ${{ github.event.inputs.nginx_version }}
 
-      - name: Build on Windows (MSYS2)
-        if: matrix.os == 'windows-latest'
-        shell: msys2 {0}
-        run: |
-          cd nginx
-          git clone https://github.com/google/ngx_brotli.git --recursive modules/ngx_brotli
-          ./auto/configure --with-http_ssl_module --add-module=modules/ngx_brotli
-          make -j$(nproc)
-          mkdir -p ../dist
-          cp ./objs/nginx.exe ../dist/nginx-windows-$VERSION.exe
-
-      # -----------------------------
-      # 上传构建产物
-      # -----------------------------
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: nginx-${{ matrix.os }}-$VERSION
-          path: dist/
-          retention-days: 7
-
-  # -----------------------------
-  # 自动发布 Release
-  # -----------------------------
-  release:
-    name: Create GitHub Release
-    needs: [build]
-    runs-on: ubuntu-latest
+  windows:
+    runs-on: windows-latest
     steps:
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: release_files
+      - name: Checkout source
+        uses: actions/checkout@v4
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ env.VERSION }}
-          name: "Nginx Multi-Platform Build v${{ env.VERSION }}"
-          draft: false
-          prerelease: false
-          files: release_files/**/*
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install dependencies
+        run: |
+          choco install visualstudio2022buildtools -y
+          choco install git -y
+
+      - name: Clone Nginx source
+        run: |
+          git clone https://github.com/nginx/nginx.git
+          cd nginx
+          git checkout release-${{ github.event.inputs.nginx_version }}
+
+      - name: Build Nginx (Windows)
+        run: |
+          cd nginx
+          nmake -f Makefile.msvc
