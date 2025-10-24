@@ -1,249 +1,124 @@
-name: Compile & Release Nginx Multi-platform
+name: Build & Release Multi-Platform Nginx
 
 on:
+  push:
+    tags:
+      - "v*"   # 推送标签时自动构建发布，如 v1.26.0
   workflow_dispatch:
     inputs:
       nginx_version:
-        description: 'Nginx Version (e.g., 1.24.0)'
+        description: "手动指定 Nginx 版本号 (例如: 1.26.0)"
         required: true
-        default: '1.24.0'
-      platforms:
-        description: 'Target Platforms (comma-separated, e.g., linux-amd64,linux-arm64,windows-amd64)'
-        required: true
-        default: 'linux-amd64,linux-arm64,windows-amd64' # 默认编译所有支持的平台
-      upload_artifacts:
-        description: 'Upload compiled binaries as artifacts?'
-        type: boolean
-        default: true
-      create_release:
-        description: 'Create a GitHub Release?'
-        type: boolean
-        default: false
-      release_tag:
-        description: 'Custom Release Tag (e.g., v1.24.0-build)'
-        required: false
-        default: ''
+        default: "1.26.0"
 
 jobs:
-  # This job processes the inputs and sets up the matrix for actual builds
-  setup_matrix:
-    runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.generate_matrix.outputs.matrix }}
-    steps:
-      - name: Generate build matrix
-        id: generate_matrix
-        run: |
-          PLATFORMS_INPUT="${{ github.event.inputs.platforms }}"
-          IFS=',' read -ra ADDR <<< "$PLATFORMS_INPUT"
-          PLATFORM_LIST='['
-          FIRST=true
-          for i in "${ADDR[@]}"; do
-            ARCH=""
-            OS=""
-            if [[ "$i" == "linux-amd64" ]]; then
-              OS="ubuntu-latest"
-              ARCH="amd64"
-              RUNNER_LABELS=""
-            elif [[ "$i" == "linux-arm64" ]]; then
-              # For ARM64, you might need a self-hosted runner or special setup
-              # For simplicity, we'll try to use ubuntu-latest and rely on cross-compilation/emulation if possible (though less ideal for direct Nginx compile)
-              # A dedicated ARM64 self-hosted runner is HIGHLY recommended for native ARM compiles.
-              OS="ubuntu-latest" # Or 'self-hosted,linux,arm64' if you have one
-              ARCH="arm64"
-              RUNNER_LABELS="self-hosted,linux,ARM64" # Example if using self-hosted
-              # For this example, we'll default to x86_64 runner and expect cross-compile or Buildx (if you change to docker)
-              # For actual direct arm64 compile on x86 runner, it's very complex with QEMU/etc.
-              # Let's assume you have a self-hosted ARM64 runner for 'linux-arm64' or adapt for specific cross-compile setup.
-              # For this pure source compile, we'll suggest self-hosted. If not, this step will likely fail or require significant cross-compile toolchain setup.
-            elif [[ "$i" == "windows-amd64" ]]; then
-              OS="windows-latest"
-              ARCH="amd64"
-              RUNNER_LABELS=""
-            else
-              echo "::warning::Unsupported platform: $i - skipping."
-              continue
-            fi
-            
-            if [ -n "$OS" ]; then # Only add if OS is defined
-              if [ "$FIRST" = false ]; then
-                PLATFORM_LIST+=','
-              fi
-              PLATFORM_LIST+="{\"os\":\"$OS\",\"arch\":\"$ARCH\""
-              if [ -n "$RUNNER_LABELS" ]; then
-                PLATFORM_LIST+=",\"runner\":\"$RUNNER_LABELS\""
-              fi
-              PLATFORM_LIST+="}"
-              FIRST=false
-            fi
-          done
-          PLATFORM_LIST+=']'
-          echo "Generated matrix: $PLATFORM_LIST"
-          echo "matrix=$PLATFORM_LIST" >> $GITHUB_OUTPUT
-
   build:
-    needs: setup_matrix
-    runs-on: ${{ matrix.runner || matrix.os }} # Use custom runner labels if defined, otherwise use os
-    env:
-      NGINX_VERSION: ${{ github.event.inputs.nginx_version }}
-      ARCHIVE_NAME: nginx-${{ github.event.inputs.nginx_version }}-${{ matrix.arch }}
+    name: Build Nginx (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false # Allow other builds to continue if one fails
-      matrix: ${{ fromJson(needs.setup_matrix.outputs.matrix) }}
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
-      - name: Checkout repository
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      # --- Linux Compilation ---
-      - name: Install dependencies (Linux - ${{ matrix.arch }})
-        if: startsWith(matrix.os, 'ubuntu')
+      # 获取版本号（tag 或手动输入）
+      - name: Set NGINX version
+        id: set-version
         run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential libpcre3 libpcre3-dev zlib1g zlib1g-dev libssl-dev
-          # Handle ARM64 cross-compile dependencies if not using a native ARM64 runner
-          # This is highly complex for Nginx and usually requires specific toolchains and dependency compilation.
-          # For a direct SRC compile on x86_64 runner for ARM64 target:
-          # You would need 'gcc-arm-linux-gnueabihf' etc., and configure Nginx with --crossbuild options.
-          # For simplicity in this example, it's assumed:
-          # - linux-amd64 runs on ubuntu-latest natively
-          # - linux-arm64 runs on a self-hosted ARM64 runner (if 'runner' label is set)
-          # A proper ARM64 cross-compile setup on x86_64 is beyond this general example.
-          # If matrix.arch == 'arm64' and no self-hosted runner, this might fail or require specific instructions.
+          if [ -n "${{ github.event.inputs.nginx_version }}" ]; then
+            echo "VERSION=${{ github.event.inputs.nginx_version }}" >> $GITHUB_ENV
+          else
+            echo "VERSION=${GITHUB_REF##*/}" | sed 's/^v//' >> $GITHUB_ENV
+          fi
+        shell: bash
 
-      - name: Download Nginx source (Linux)
-        if: startsWith(matrix.os, 'ubuntu')
+      - name: Print version
+        run: echo "Building Nginx version: $VERSION"
+
+      # 下载指定版本源码
+      - name: Download Nginx source
         run: |
-          wget https://nginx.org/download/nginx-${{ env.NGINX_VERSION }}.tar.gz -O /tmp/nginx.tar.gz
-          tar -xzf /tmp/nginx.tar.gz -C /tmp
-          mv /tmp/nginx-${{ env.NGINX_VERSION }} /tmp/nginx-source
+          curl -O https://nginx.org/download/nginx-$VERSION.tar.gz
+          tar -xzf nginx-$VERSION.tar.gz
+          mv nginx-$VERSION nginx
 
-      - name: Configure and build Nginx (Linux - ${{ matrix.arch }})
-        if: startsWith(matrix.os, 'ubuntu')
-        working-directory: /tmp/nginx-source
+      # -----------------------------
+      # Linux + macOS 构建
+      # -----------------------------
+      - name: Build on Linux/macOS
+        if: matrix.os != 'windows-latest'
         run: |
-          # General configure options
-          ./configure \
-            --prefix=/opt/nginx \
-            --with-http_ssl_module \
-            --with-http_v2_module \
-            --with-pcre \
-            --with-zlib \
-            --with-compat \
-            --error-log-path=/opt/nginx/logs/error.log \
-            --http-log-path=/opt/nginx/logs/access.log \
-            --pid-path=/opt/nginx/nginx.pid \
-            --lock-path=/opt/nginx/nginx.lock
-
-          # Special handling for ARM64 if it's a cross-compile on x86_64 runner
-          # This part is highly dependent on your cross-compile toolchain setup.
-          # E.g., if matrix.arch == 'arm64' and runner.os is not arm64, you'd need:
-          # --crossbuild=Linux::arm64 --with-cc=/path/to/arm64-gcc --with-ld-opt="-L/path/to/arm64-libs" etc.
-          # For this example, if matrix.arch == 'arm64', we assume a native ARM64 runner or
-          # a pre-configured environment for it.
-
+          sudo apt-get update -y || true
+          sudo apt-get install -y build-essential libpcre3 libpcre3-dev zlib1g-dev libssl-dev git
+          cd nginx
+          git clone https://github.com/google/ngx_brotli.git --recursive modules/ngx_brotli
+          ./auto/configure --with-http_ssl_module --add-module=modules/ngx_brotli
           make -j$(nproc)
-          make install
+          mkdir -p ../dist
+          cp ./objs/nginx ../dist/nginx-${{ matrix.os }}-$VERSION
 
-          # Create a tar.gz archive
-          # Clean up source to keep archive small
-          rm -rf /tmp/nginx-source
-          cd /opt/nginx
-          tar -czf ${{ github.workspace }}/${{ env.ARCHIVE_NAME }}.tar.gz .
-        
-        # --- Windows Compilation ---
-      - name: Set up MSYS2 (for Windows build environment)
-        if: startsWith(matrix.os, 'windows')
+      # -----------------------------
+      # Windows 构建（MSYS2）
+      # -----------------------------
+      - name: Setup MSYS2 for Windows
+        if: matrix.os == 'windows-latest'
         uses: msys2/setup-msys2@v2
         with:
-          msystem: MINGW64
-          path-type: inherit
           update: true
-          install: >
+          install: >-
             git
             make
-            gcc
-            # For Nginx dependencies, use mingw-w64-x86_64-pcre, openssl, zlib
-            mingw-w64-x86_64-pcre
-            mingw-w64-x86_64-zlib
-            mingw-w64-x86_64-openssl # Or libopenssl-dev on some systems
+            mingw-w64-x86_64-gcc
+            pcre
+            pcre-devel
+            zlib
+            zlib-devel
+            openssl
+            openssl-devel
 
-      - name: Download Nginx source (Windows)
-        if: startsWith(matrix.os, 'windows')
+      - name: Build on Windows (MSYS2)
+        if: matrix.os == 'windows-latest'
+        shell: msys2 {0}
         run: |
-          Invoke-WebRequest -Uri "https://nginx.org/download/nginx-${{ env.NGINX_VERSION }}.zip" -OutFile "nginx.zip"
-          Expand-Archive -Path "nginx.zip" -DestinationPath "$env:RUNNER_TEMP\nginx-source"
-          # Rename the extracted folder to simply "nginx-source" for consistency
-          Get-ChildItem -Path "$env:RUNNER_TEMP\nginx-source" | Rename-Item -NewName "nginx-source"
-        shell: powershell
+          cd nginx
+          git clone https://github.com/google/ngx_brotli.git --recursive modules/ngx_brotli
+          ./auto/configure --with-http_ssl_module --add-module=modules/ngx_brotli
+          make -j$(nproc)
+          mkdir -p ../dist
+          cp ./objs/nginx.exe ../dist/nginx-windows-$VERSION.exe
 
-      - name: Configure and build Nginx (Windows via MSYS2)
-        if: startsWith(matrix.os, 'windows')
-        shell: msys2 {0} # Use MSYS2 shell
-        working-directory: ${{ env.RUNNER_TEMP }}\nginx-source\nginx-source
-        run: |
-          ./configure \
-            --with-cc="gcc" \
-            --prefix="/c/nginx" \
-            --with-http_ssl_module \
-            --with-http_v2_module \
-            --with-pcre \
-            --with-zlib \
-            --with-compat \
-            --with-openssl="/mingw64" \
-            --with-pcre="/mingw64" \
-            --with-zlib="/mingw64" \
-            --error-log-path=/c/nginx/logs/error.log \
-            --http-log-path=/c/nginx/logs/access.log \
-            --pid-path=/c/nginx/nginx.pid \
-            --lock-path=/c/nginx/nginx.lock
-
-          make
-          make install
-
-          # Create a zip archive
-          cd /c/nginx
-          zip -r ${{ github.workspace }}/${{ env.ARCHIVE_NAME }}.zip *
-
-      # --- Upload Artifacts (Conditional) ---
-      - name: Upload Nginx binaries as Artifact
-        if: ${{ github.event.inputs.upload_artifacts == 'true' }}
+      # -----------------------------
+      # 上传构建产物
+      # -----------------------------
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: nginx-compiled-${{ matrix.os }}-${{ matrix.arch }}
-          path: |
-            ${{ github.workspace }}/*.tar.gz
-            ${{ github.workspace }}/*.zip
-          # Keep artifact for a short duration, adjust as needed
-          retention-days: 7 
+          name: nginx-${{ matrix.os }}-$VERSION
+          path: dist/
+          retention-days: 7
 
-  create_github_release:
-    needs: build # Depends on all builds completing
+  # -----------------------------
+  # 自动发布 Release
+  # -----------------------------
+  release:
+    name: Create GitHub Release
+    needs: [build]
     runs-on: ubuntu-latest
-    if: ${{ github.event.inputs.create_release == 'true' && success() }} # Only create release if builds passed
     steps:
-      - name: Download all build artifacts
+      - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          path: artifacts
-
-      - name: Prepare Release Description
-        id: release_description
-        run: |
-          echo "Release of Nginx version ${{ github.event.inputs.nginx_version }}" > release_body.md
-          echo "" >> release_body.md
-          echo "---" >> release_body.md
-          echo "Nginx compiled for the following platforms:" >> release_body.md
-          ls -1 artifacts >> release_body.md
-          echo "release_body_path=$(pwd)/release_body.md" >> $GITHUB_OUTPUT
+          path: release_files
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.event.inputs.release_tag || format('nginx-v{0}-build', github.event.inputs.nginx_version) }}
-          name: Nginx v${{ github.event.inputs.nginx_version }} Multi-platform Build
-          body_path: ${{ steps.release_description.outputs.release_body_path }}
-          files: artifacts/**/* # Upload all downloaded artifacts
-          prerelease: true # Consider these as pre-releases
+          tag_name: v${{ env.VERSION }}
+          name: "Nginx Multi-Platform Build v${{ env.VERSION }}"
+          draft: false
+          prerelease: false
+          files: release_files/**/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
