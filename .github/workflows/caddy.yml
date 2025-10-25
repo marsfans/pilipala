@@ -1,10 +1,10 @@
-name: Build Caddy Multi-Platform
+name: Build & Release Caddy Multi-Platform
 
 on:
   workflow_dispatch:
     inputs:
       caddy_version:
-        description: '指定 Caddy 版本（如 v2.8.4 或 latest）'
+        description: '指定 Caddy 版本号（如 v2.8.4 或 latest）'
         required: true
         default: 'latest'
 
@@ -22,8 +22,6 @@ jobs:
 
       - name: 安装 Go
         uses: actions/setup-go@v5
-        with:
-          go-version: '1.22'
 
       - name: 安装 xcaddy
         run: go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
@@ -35,7 +33,7 @@ jobs:
           export GOARCH=${{ matrix.goarch }}
           export VERSION=${{ github.event.inputs.caddy_version }}
 
-          echo "开始编译: GOOS=${GOOS}, GOARCH=${GOARCH}, VERSION=${VERSION}"
+          echo "开始编译: ${GOOS}-${GOARCH} (${VERSION})"
 
           xcaddy build ${VERSION} \
             --with github.com/caddyserver/forwardproxy@caddy2=github.com/klzgrad/forwardproxy@naive \
@@ -43,10 +41,35 @@ jobs:
             --with github.com/caddy-dns/alidns \
             --output build/caddy-${GOOS}-${GOARCH}
 
-          ls -lh build/
+          cd build
+          if [[ "$GOOS" == "windows" ]]; then
+            zip caddy-${GOOS}-${GOARCH}-${VERSION}.zip caddy-${GOOS}-${GOARCH}
+          else
+            tar -czf caddy-${GOOS}-${GOARCH}-${VERSION}.tar.gz caddy-${GOOS}-${GOARCH}
+          fi
+          cd ..
 
-      - name: 上传编译产物
+      - name: 上传产物到 Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: caddy-${{ matrix.goos }}-${{ matrix.goarch }}
           path: build/caddy-${{ matrix.goos }}-${{ matrix.goarch }}
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: 下载所有产物
+        uses: actions/download-artifact@v4
+        with:
+          path: release-files
+
+      - name: 创建 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.caddy_version }}
+          name: "Caddy ${{ github.event.inputs.caddy_version }}"
+          files: release-files/**/*
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
