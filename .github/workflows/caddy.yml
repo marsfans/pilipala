@@ -1,0 +1,52 @@
+name: Build Caddy Multi-Platform
+
+on:
+  workflow_dispatch:
+    inputs:
+      caddy_version:
+        description: '指定 Caddy 版本（如 v2.8.4 或 latest）'
+        required: true
+        default: 'latest'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: [linux, windows, darwin]
+        goarch: [amd64, arm64]
+
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v4
+
+      - name: 安装 Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: 安装 xcaddy
+        run: go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
+
+      - name: 构建 Caddy 多平台版本
+        run: |
+          mkdir -p build
+          export GOOS=${{ matrix.goos }}
+          export GOARCH=${{ matrix.goarch }}
+          export VERSION=${{ github.event.inputs.caddy_version }}
+
+          echo "开始编译: GOOS=${GOOS}, GOARCH=${GOARCH}, VERSION=${VERSION}"
+
+          xcaddy build ${VERSION} \
+            --with github.com/caddyserver/forwardproxy@caddy2=github.com/klzgrad/forwardproxy@naive \
+            --with github.com/caddy-dns/cloudflare \
+            --with github.com/caddy-dns/alidns \
+            --output build/caddy_${GOOS}_${GOARCH}
+
+          ls -lh build/
+
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: caddy-${{ github.event.inputs.caddy_version }}
+          path: build/
