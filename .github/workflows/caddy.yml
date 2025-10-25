@@ -28,7 +28,7 @@ jobs:
       - name: 安装 xcaddy
         run: go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
 
-      - name: 构建 Caddy 多平台版本
+      - name: 编译 Caddy
         run: |
           mkdir -p build
           export GOOS=${{ matrix.goos }}
@@ -41,12 +41,12 @@ jobs:
             --with github.com/caddyserver/forwardproxy@caddy2=github.com/klzgrad/forwardproxy@naive \
             --with github.com/caddy-dns/cloudflare \
             --with github.com/caddy-dns/alidns \
-            --output build/caddy_${GOOS}_${GOARCH}
+            --output build/caddy-${GOOS}-${GOARCH}
 
           ls -lh build/
 
-      - name: 上传构建产物
+      - name: 上传编译产物
         uses: actions/upload-artifact@v4
         with:
-          name: caddy-${{ github.event.inputs.caddy_version }}
-          path: build/
+          name: caddy-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: build/caddy-${{ matrix.goos }}-${{ matrix.goarch }}
