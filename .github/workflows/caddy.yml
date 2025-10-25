@@ -20,8 +20,10 @@ jobs:
       - name: 检出仓库
         uses: actions/checkout@v4
 
-      - name: 安装 Go
+      - name: 安装 Go 1.25.x
         uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.x'
 
       - name: 安装 xcaddy
         run: go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
@@ -32,18 +34,36 @@ jobs:
           export GOOS=${{ matrix.goos }}
           export GOARCH=${{ matrix.goarch }}
           export VERSION=${{ github.event.inputs.caddy_version }}
-
           echo "开始编译: ${GOOS}-${GOARCH} (${VERSION})"
 
+          # 根据平台决定输出文件名
+          if [[ "$GOOS" == "windows" ]]; then
+            OUTFILE="build/caddy-${GOOS}-${GOARCH}.exe"
+          else
+            OUTFILE="build/caddy-${GOOS}-${GOARCH}"
+          fi
+
+          # 构建
           xcaddy build ${VERSION} \
             --with github.com/caddyserver/forwardproxy@caddy2=github.com/klzgrad/forwardproxy@naive \
             --with github.com/caddy-dns/cloudflare \
             --with github.com/caddy-dns/alidns \
-            --output build/caddy-${GOOS}-${GOARCH}
+            --with github.com/caddy-dns/netlify \
+            --with github.com/caddy-dns/edgeone \
+            --with github.com/caddy-dns/huaweicloud \
+            --with github.com/caddy-dns/tencentcloud \
+            --with github.com/caddy-dns/googleclouddns \
+            --with github.com/caddy-dns/gcore \
+            --with github.com/caddy-dns/cloudns \
+            --with github.com/caddy-dns/linode \
+            --with github.com/caddy-dns/he \
+            --with github.com/caddy-dns/acmedns \
+            --output ${OUTFILE}
 
+          # 打包
           cd build
           if [[ "$GOOS" == "windows" ]]; then
-            zip caddy-${GOOS}-${GOARCH}-${VERSION}.zip caddy-${GOOS}-${GOARCH}
+            zip caddy-${GOOS}-${GOARCH}-${VERSION}.zip caddy-${GOOS}-${GOARCH}.exe
           else
             tar -czf caddy-${GOOS}-${GOARCH}-${VERSION}.tar.gz caddy-${GOOS}-${GOARCH}
           fi
@@ -52,8 +72,10 @@ jobs:
       - name: 上传产物到 Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: caddy-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: build/caddy-${{ matrix.goos }}-${{ matrix.goarch }}
+          name: caddy-${{ matrix.goos }}-${{ matrix.goarch }}-${{ github.event.inputs.caddy_version }}
+          path: |
+            build/caddy-${{ matrix.goos }}-${{ matrix.goarch }}-${{ github.event.inputs.caddy_version }}.*
+
   release:
     needs: build
     runs-on: ubuntu-latest
@@ -66,10 +88,9 @@ jobs:
       - name: 创建 Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.event.inputs.caddy_version }}
+          tag_name: "Caddy ${{ github.event.inputs.caddy_version }}"
           name: "Caddy ${{ github.event.inputs.caddy_version }}"
           files: release-files/**/*
-          draft: false
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
