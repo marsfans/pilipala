@@ -44,7 +44,7 @@ jobs:
           fi
 
           xcaddy build ${VERSION} \
-            --with github.com/caddyserver/forwardproxy@caddy2=github.com/klzgrad/forwardproxy@naive \
+            --with github.com/caddyserver/forwardproxy=github.com/klzgrad/forwardproxy@naive \
             --with github.com/caddy-dns/cloudflare \
             --with github.com/caddy-dns/alidns \
             --with github.com/caddy-dns/netlify \
