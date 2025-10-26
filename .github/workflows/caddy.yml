@@ -90,5 +90,25 @@ jobs:
           files: release-files/**/*
           draft: false
           prerelease: false
+          body: |
+            本次 Release 编译了以下插件：
+
+            - forwardproxy (naive)
+            - cloudflare
+            - alidns
+            - netlify
+            - edgeone
+            - acmedns
+            - linode
+            - huaweicloud
+            - tencentcloud
+            - vultr
+            - gcore
+            - googleclouddns
+            - cloudns
+
+            平台打包说明：
+            - Linux/macOS: tar.gz
+            - Windows: zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
