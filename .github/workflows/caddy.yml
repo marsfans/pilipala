@@ -36,11 +36,11 @@ jobs:
           export VERSION=${{ github.event.inputs.caddy_version }}
           echo "开始编译: ${GOOS}-${GOARCH} (${VERSION})"
 
-          # 根据平台决定输出文件名
+          # 设置输出文件名
           if [[ "$GOOS" == "windows" ]]; then
-            OUTFILE="build/caddy-${GOOS}-${GOARCH}.exe"
+            OUTFILE="build/caddy.exe"
           else
-            OUTFILE="build/caddy-${GOOS}-${GOARCH}"
+            OUTFILE="build/caddy"
           fi
 
           # 构建
@@ -48,24 +48,14 @@ jobs:
             --with github.com/caddyserver/forwardproxy@caddy2=github.com/klzgrad/forwardproxy@naive \
             --with github.com/caddy-dns/cloudflare \
             --with github.com/caddy-dns/alidns \
-            --with github.com/caddy-dns/netlify \
-            --with github.com/caddy-dns/edgeone \
-            --with github.com/caddy-dns/huaweicloud \
-            --with github.com/caddy-dns/tencentcloud \
-            --with github.com/caddy-dns/googleclouddns \
-            --with github.com/caddy-dns/gcore \
-            --with github.com/caddy-dns/cloudns \
-            --with github.com/caddy-dns/linode \
-            --with github.com/caddy-dns/he \
-            --with github.com/caddy-dns/acmedns \
             --output ${OUTFILE}
 
-          # 打包
+          # 打包并保持系统架构信息在压缩包名中
           cd build
           if [[ "$GOOS" == "windows" ]]; then
-            zip caddy-${GOOS}-${GOARCH}-${VERSION}.zip caddy-${GOOS}-${GOARCH}.exe
+            zip caddy-${GOOS}-${GOARCH}-${VERSION}.zip caddy.exe
           else
-            tar -czf caddy-${GOOS}-${GOARCH}-${VERSION}.tar.gz caddy-${GOOS}-${GOARCH}
+            tar -czf caddy-${GOOS}-${GOARCH}-${VERSION}.tar.gz caddy
           fi
           cd ..
 
@@ -73,8 +63,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: caddy-${{ matrix.goos }}-${{ matrix.goarch }}-${{ github.event.inputs.caddy_version }}
-          path: |
-            build/caddy-${{ matrix.goos }}-${{ matrix.goarch }}-${{ github.event.inputs.caddy_version }}.*
+          path: build/caddy-${{ matrix.goos }}-${{ matrix.goarch }}-${{ github.event.inputs.caddy_version }}.*
 
   release:
     needs: build
@@ -88,9 +77,10 @@ jobs:
       - name: 创建 Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: "Caddy ${{ github.event.inputs.caddy_version }}"
+          tag_name: ${{ github.event.inputs.caddy_version }}
           name: "Caddy ${{ github.event.inputs.caddy_version }}"
           files: release-files/**/*
+          draft: false
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
