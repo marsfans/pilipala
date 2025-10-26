@@ -28,29 +28,37 @@ jobs:
       - name: 安装 xcaddy
         run: go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
 
-      - name: 编译 Caddy
+      - name: 编译 Caddy（含全部 DNS 插件）
         run: |
           mkdir -p build
           export GOOS=${{ matrix.goos }}
           export GOARCH=${{ matrix.goarch }}
           export VERSION=${{ github.event.inputs.caddy_version }}
+
           echo "开始编译: ${GOOS}-${GOARCH} (${VERSION})"
 
-          # 设置输出文件名
           if [[ "$GOOS" == "windows" ]]; then
             OUTFILE="build/caddy.exe"
           else
             OUTFILE="build/caddy"
           fi
 
-          # 构建
           xcaddy build ${VERSION} \
             --with github.com/caddyserver/forwardproxy@caddy2=github.com/klzgrad/forwardproxy@naive \
             --with github.com/caddy-dns/cloudflare \
             --with github.com/caddy-dns/alidns \
+            --with github.com/caddy-dns/netlify \
+            --with github.com/caddy-dns/edgeone \
+            --with github.com/caddy-dns/acmedns \
+            --with github.com/caddy-dns/linode \
+            --with github.com/caddy-dns/huaweicloud \
+            --with github.com/caddy-dns/tencentcloud \
+            --with github.com/caddy-dns/vultr \
+            --with github.com/caddy-dns/gcore \
+            --with github.com/caddy-dns/googleclouddns \
+            --with github.com/caddy-dns/cloudns \
             --output ${OUTFILE}
 
-          # 打包并保持系统架构信息在压缩包名中
           cd build
           if [[ "$GOOS" == "windows" ]]; then
             zip caddy-${GOOS}-${GOARCH}-${VERSION}.zip caddy.exe
@@ -77,7 +85,7 @@ jobs:
       - name: 创建 Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.event.inputs.caddy_version }}
+          tag_name: "Caddy ${{ github.event.inputs.caddy_version }}"
           name: "Caddy ${{ github.event.inputs.caddy_version }}"
           files: release-files/**/*
           draft: false
