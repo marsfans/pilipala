@@ -26,7 +26,7 @@ cd build-deps
 # wget -c https://ftp.pcre.org/pub/pcre/pcre-8.45.tar.gz
 # tar xf pcre-8.45.tar.gz
 git clone https://github.com/PCRE2Project/pcre2
-PCRE_DIR=$(pwd)/pcre-8.45
+PCRE_DIR=$(pwd)/pcre2
 
 # zlib
 # wget -c https://zlib.net/zlib-1.2.13.tar.gz
@@ -59,7 +59,7 @@ fi
   --with-zlib=${ZLIB_DIR} \
   --with-openssl=${OPENSSL_DIR} \
   # --with-file-aio \
-  --with-threads \
+  # --with-threads \
   --with-cc-opt='-static' \
   --with-ld-opt='-static'
 
