@@ -60,8 +60,8 @@ fi
   --with-openssl=${OPENSSL_DIR} \
   # --with-file-aio \
   # --with-threads \
-  --with-cc-opt='-static' \
-  --with-ld-opt='-static'
+  "CFLAGS=-static"
+  "LDFLAGS=-static"
 
 # build
 make -j$(nproc || sysctl -n hw.ncpu || echo 2)
