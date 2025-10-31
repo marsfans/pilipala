@@ -6,7 +6,7 @@ on:
       nginx_version:
         description: 'NGINX version to build (e.g. 1.26.4)'
         required: true
-        default: '1.26.4'
+        default: '1.29.3'
       release_name:
         description: 'Release name (optional)'
         required: false
