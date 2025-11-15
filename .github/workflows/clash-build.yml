@@ -49,6 +49,7 @@ jobs:
           export GOARCH=${{ matrix.goarch }}
           export VERSION=${{ github.event.inputs.clash_version }}
           export CURRENT_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          MODULE_PATH=$(sed -n '1s/^module //p' go.mod)
           echo "开始编译: ${GOOS}-${GOARCH} (${VERSION}) ${CURRENT_TIME}"
 
           if [[ "$GOOS" == "windows" ]]; then
@@ -57,8 +58,11 @@ jobs:
             OUTFILE="build/clash"
           fi
           # go mod init
-          go build -trimpath -ldflags "-X 'github.com/Ieooo/clash/constant.Version=${VERSION}' -X 'github.com/Ieooo/clash/constant.BuildTime=${CURRENT_TIME}' -w -s -buildid=" \ 
-          -o ${OUTFILE}
+          # go build -trimpath -ldflags '-X "github.com/Ieooo/clash/constant.Version=${VERSION}" -X "github.com/Ieooo/clash/constant.BuildTime=${CURRENT_TIME}" -w -s -buildid=' \ 
+          # -o ${OUTFILE}
+          go build -ldflags "-s -w -X '${MODULE_PATH}/constant.Version=${VERSION}' -X '${MODULE_PATH}/constant.BuildTime=${CURRENT_TIME}'" -o ${OUTFILE}
+          
+
           
           cd build
           if [[ "$GOOS" == "windows" ]]; then
