@@ -58,7 +58,7 @@ jobs:
           fi
           # go mod init
           go build -ldflags "-X github.com/Ieooo/clash/constant.Version=${VERSION}" \
-          "-X github.com/Dreamacro/clash/constant.BuildTime=${CURRENT_TIME}" \
+          "-X github.com/Ieooo/clash/constant.BuildTime=${CURRENT_TIME}" \
           -o ${OUTFILE}
 
           cd build
