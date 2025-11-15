@@ -16,9 +16,7 @@ permissions:
   issues: write
 
 jobs:
-  build:
-    name: Build for ${{ matrix.os }}-${{ matrix.arch }}
-    runs-on: ${{ matrix.runner }}
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         goos: [linux, windows, darwin]
