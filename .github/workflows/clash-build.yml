@@ -1,17 +1,14 @@
-name: Multi-arch build & release
+name: Multi-arch clash build & release
 
 on:
   # 手动触发时可输入版本号 tag（如 v1.2.3）
   workflow_dispatch:
     inputs:
       clash_version:
-        description: '指定 Clash 版本号（如 v2.8.4 或 latest）'
+        description: '指定 Clash 版本号（如 v1.18.0 或 latest）'
         required: true
-        default: 'latest'
-  # 可按需也监听 push tags
-  push:
-    tags:
-      - 'v*.*.*'
+        default: '1.18.0'
+
 
 permissions:
   contents: write    # 需要写权限以便创建 release / tag
@@ -65,6 +62,11 @@ jobs:
             tar -czf clash-${GOOS}-${GOARCH}-${VERSION}.tar.gz clash
           fi
           cd ..
+      - name: 上传产物到 Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: clash-${{ matrix.goos }}-${{ matrix.goarch }}-${{ github.event.inputs.clash_version }}
+          path: build/clash-${{ matrix.goos }}-${{ matrix.goarch }}-${{ github.event.inputs.clash_version }}.*
 
   
   release:
