@@ -36,6 +36,10 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.21.x'
+      - name: Set timezone to Asia/Shanghai
+        run: |
+          sudo ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+          date
 
       - name: 编译 Clash
         run: |
@@ -44,7 +48,7 @@ jobs:
           export GOOS=${{ matrix.goos }}
           export GOARCH=${{ matrix.goarch }}
           export VERSION=${{ github.event.inputs.clash_version }}
-
+          CURRENT_TIME_UTC=$(date '+%Y-%m-%d_%H-%M-%S')
           echo "开始编译: ${GOOS}-${GOARCH} (${VERSION})"
 
           if [[ "$GOOS" == "windows" ]]; then
@@ -53,7 +57,9 @@ jobs:
             OUTFILE="build/clash"
           fi
           # go mod init
-          go build -ldflags "-X github.com/Ieooo/clash/constant.Version=$(VERSION)" -o ${OUTFILE}
+          go build -ldflags "-X github.com/Ieooo/clash/constant.Version=${VERSION}" \
+          -X "github.com/Dreamacro/clash/constant.BuildTime=$(BUILDTIME)" \
+          -o ${OUTFILE}
 
           cd build
           if [[ "$GOOS" == "windows" ]]; then
