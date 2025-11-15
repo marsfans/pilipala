@@ -32,13 +32,14 @@ jobs:
           # 如果需要拉取特定 ref，可改为 refs/tags/${{ github.event.inputs.tag }} 或 github.ref
           fetch-depth: 0
 
-      - name: 安装 Go 1.25.x
+      - name: 安装 Go 1.21.x
         uses: actions/setup-go@v5
         with:
-          go-version: '1.25.x'
+          go-version: '1.21.x'
 
       - name: 编译 Clash
         run: |
+          ls
           mkdir -p build
           export GOOS=${{ matrix.goos }}
           export GOARCH=${{ matrix.goarch }}
