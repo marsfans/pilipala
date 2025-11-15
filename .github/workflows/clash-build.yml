@@ -1,0 +1,93 @@
+name: Multi-arch build & release
+
+on:
+  # 手动触发时可输入版本号 tag（如 v1.2.3）
+  workflow_dispatch:
+    inputs:
+      clash_version:
+        description: '指定 Clash 版本号（如 v2.8.4 或 latest）'
+        required: true
+        default: 'latest'
+  # 可按需也监听 push tags
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write    # 需要写权限以便创建 release / tag
+  packages: write
+  issues: write
+
+jobs:
+  build:
+    name: Build for ${{ matrix.os }}-${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        goos: [linux, windows, darwin]
+        goarch: [amd64, arm64]
+
+    steps:
+      - name: Checkout specified repository
+        uses: actions/checkout@v4
+        with:
+          # 显式指定仓库（owner/repo）
+          repository: '535205856/clash-backup'
+          # 如果需要拉取特定 ref，可改为 refs/tags/${{ github.event.inputs.tag }} 或 github.ref
+          fetch-depth: 0
+
+      - name: 安装 Go 1.25.x
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.x'
+
+      - name: 编译 Clash
+        run: |
+          mkdir -p build
+          export GOOS=${{ matrix.goos }}
+          export GOARCH=${{ matrix.goarch }}
+          export VERSION=${{ github.event.inputs.clash_version }}
+
+          echo "开始编译: ${GOOS}-${GOARCH} (${VERSION})"
+
+          if [[ "$GOOS" == "windows" ]]; then
+            OUTFILE="build/clash.exe"
+          else
+            OUTFILE="build/clash"
+          fi
+
+          go build -ldflags "-X main.version=${VERSION}" -o ${OUTFILE}
+
+          cd build
+          if [[ "$GOOS" == "windows" ]]; then
+            zip clash-${GOOS}-${GOARCH}-${VERSION}.zip clash.exe
+          else
+            tar -czf clash-${GOOS}-${GOARCH}-${VERSION}.tar.gz clash
+          fi
+          cd ..
+
+  
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: 下载所有产物
+        uses: actions/download-artifact@v4
+        with:
+          path: release-files
+
+      - name: 创建 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "Clash_${{ github.event.inputs.clash_version }}"
+          name: "Clash ${{ github.event.inputs.clash_version }}"
+          files: release-files/**/*
+          draft: false
+          prerelease: false
+          body: |
+            clash build clash ${{ github.event.inputs.clash_version }}
+            平台打包说明：
+            - Linux/macOS: tar.gz
+            - Windows: zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
