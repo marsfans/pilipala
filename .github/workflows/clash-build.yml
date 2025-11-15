@@ -28,7 +28,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           # 显式指定仓库（owner/repo）
-          repository: '535205856/clash-backup'
+          repository: 'Ieooo/clash'
           # 如果需要拉取特定 ref，可改为 refs/tags/${{ github.event.inputs.tag }} 或 github.ref
           fetch-depth: 0
 
