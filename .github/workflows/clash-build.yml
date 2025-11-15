@@ -53,7 +53,7 @@ jobs:
             OUTFILE="build/clash"
           fi
           # go mod init
-          go build -ldflags '-X "github.com/Ieooo/clash/constant.Version=$(VERSION)" -o ${OUTFILE}
+          go build -ldflags "-X github.com/Ieooo/clash/constant.Version=$(VERSION)" -o ${OUTFILE}
 
           cd build
           if [[ "$GOOS" == "windows" ]]; then
