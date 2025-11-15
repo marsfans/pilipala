@@ -48,7 +48,7 @@ jobs:
           export GOOS=${{ matrix.goos }}
           export GOARCH=${{ matrix.goarch }}
           export VERSION=${{ github.event.inputs.clash_version }}
-          CURRENT_TIME=$(date '+%Y-%m-%d_%H-%M-%S')
+          CURRENT_TIME=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
           echo "开始编译: ${GOOS}-${GOARCH} (${VERSION})"
 
           if [[ "$GOOS" == "windows" ]]; then
@@ -57,8 +57,7 @@ jobs:
             OUTFILE="build/clash"
           fi
           # go mod init
-          go build -ldflags \
-          "-X 'github.com/Ieooo/clash/constant.Version=${VERSION}' -X 'github.com/Ieooo/clash/constant.BuildTime=${CURRENT_TIME}'" \
+          go build -trimpath -ldflags'-X "github.com/Dreamacro/clash/constant.Version=$(VERSION)" -X "github.com/Dreamacro/clash/constant.BuildTime=$(BUILDTIME)" -w -s -buildid=' \
           -o ${OUTFILE}
 
           cd build
