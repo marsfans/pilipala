@@ -57,9 +57,9 @@ jobs:
             OUTFILE="build/clash"
           fi
           # go mod init
-          go build -trimpath -ldflags "-X 'main.Version=${VERSION}' -X 'main.BuildTime=${CURRENT_TIME}'" \ # '-X "github.com/Ieooo/clash/constant.Version=${VERSION}" -X "github.com/Ieooo/clash/constant.BuildTime=${CURRENT_TIME}" -w -s -buildid=' \
+          go build -trimpath -ldflags "-X 'main.Version=${VERSION}' -X 'main.BuildTime=${CURRENT_TIME}'" \ 
           -o ${OUTFILE}
-
+          # '-X "github.com/Ieooo/clash/constant.Version=${VERSION}" -X "github.com/Ieooo/clash/constant.BuildTime=${CURRENT_TIME}" -w -s -buildid=' \
           cd build
           if [[ "$GOOS" == "windows" ]]; then
             zip clash-${GOOS}-${GOARCH}-${VERSION}.zip clash.exe
