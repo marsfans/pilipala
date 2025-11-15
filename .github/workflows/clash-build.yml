@@ -57,7 +57,7 @@ jobs:
             OUTFILE="build/clash"
           fi
           # go mod init
-          go build -trimpath -ldflags '-X "github.com/Ieooo/clash/constant.Version=${VERSION}" -X "github.com/Ieooo/clash/constant.BuildTime=${CURRENT_TIME}" -w -s -buildid=' \
+          go build -trimpath -ldflags "-X 'main.Version=${VERSION}' -X 'main.BuildTime=${CURRENT_TIME}'" # '-X "github.com/Ieooo/clash/constant.Version=${VERSION}" -X "github.com/Ieooo/clash/constant.BuildTime=${CURRENT_TIME}" -w -s -buildid=' \
           -o ${OUTFILE}
 
           cd build
