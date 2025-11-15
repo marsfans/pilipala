@@ -52,7 +52,7 @@ jobs:
           else
             OUTFILE="build/clash"
           fi
-
+          go mod init
           go build -ldflags "-X main.version=${VERSION}" -o ${OUTFILE}
 
           cd build
