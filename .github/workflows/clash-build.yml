@@ -48,7 +48,7 @@ jobs:
           export GOOS=${{ matrix.goos }}
           export GOARCH=${{ matrix.goarch }}
           export VERSION=${{ github.event.inputs.clash_version }}
-          export CURRENT_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          export CURRENT_TIME=$(date "%Y-%m-%dT%H:%M:%SZ")
           MODULE_PATH=$(sed -n '1s/^module //p' go.mod)
           echo "开始编译: ${GOOS}-${GOARCH} (${VERSION}) ${CURRENT_TIME}"
 
