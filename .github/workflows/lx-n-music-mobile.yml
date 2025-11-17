@@ -73,6 +73,11 @@ jobs:
   steps:
     - name: Check out git repository
       uses: actions/checkout@v4
+      with:
+          # 显式指定仓库（owner/repo）
+          repository: 'souvenp/lx-netease-music-mobile'
+          # 如果需要拉取特定 ref，可改为 refs/tags/${{ github.event.inputs.tag }} 或 github.ref
+          fetch-depth: 0
 
     - name: Download Artifacts
       uses: actions/download-artifact@v4
@@ -108,3 +113,4 @@ jobs:
           artifacts/lx-netease-music-mobile-v${{ env.PACKAGE_VERSION }}-universal.apk
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
