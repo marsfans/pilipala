@@ -41,15 +41,15 @@ jobs:
           sudo ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
           date
 
-      - name: 编译 Clash
+      - name: 编译 torent
         run: |
-          ls
-          mkdir -p torrent-${GOOS}-${GOARCH}-${VERSION}
           export GOOS=${{ matrix.goos }}
           export GOARCH=${{ matrix.goarch }}
           export VERSION=$(git describe --tags --abbrev=0)
           export CURRENT_TIME=$(date +'%Y-%m-%d %H:%M:%S')
           MODULE_PATH=$(sed -n '1s/^module //p' go.mod)
+          mkdir -p torrent-${GOOS}-${GOARCH}-${VERSION}
+          ls
           echo "开始编译: ${GOOS}-${GOARCH} (${VERSION}) ${CURRENT_TIME}"
 
           cd torrent-${GOOS}-${GOARCH}-${VERSION}
