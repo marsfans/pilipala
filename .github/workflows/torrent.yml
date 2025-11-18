@@ -56,10 +56,10 @@ jobs:
           # go mod init
           # go build -trimpath -ldflags '-X "github.com/anacrolix/torrent/constant.Version=${VERSION}" -X "github.com/anacrolix/torrent/constant.BuildTime=${CURRENT_TIME}" -w -s -buildid=' \ 
           # -o ${OUTFILE}
-          go build ../cmd/magnet-metainfo/ -ldflags "-s -w -X '${MODULE_PATH}/constant.Version=${VERSION}' -X '${MODULE_PATH}/constant.BuildTime=${CURRENT_TIME}'"
-          go build ../cmd/torrent-pick/ -ldflags "-s -w -X '${MODULE_PATH}/constant.Version=${VERSION}' -X '${MODULE_PATH}/constant.BuildTime=${CURRENT_TIME}'"
-          go build ../cmd/torrent/ -ldflags "-s -w -X '${MODULE_PATH}/constant.Version=${VERSION}' -X '${MODULE_PATH}/constant.BuildTime=${CURRENT_TIME}'"
-          go build ../cmd/torrent2/ -ldflags "-s -w -X '${MODULE_PATH}/constant.Version=${VERSION}' -X '${MODULE_PATH}/constant.BuildTime=${CURRENT_TIME}'"
+          go build ../cmd/magnet-metainfo/ # -ldflags "-s -w -X '${MODULE_PATH}/constant.Version=${VERSION}' -X '${MODULE_PATH}/constant.BuildTime=${CURRENT_TIME}'"
+          go build ../cmd/torrent-pick/ # -ldflags "-s -w -X '${MODULE_PATH}/constant.Version=${VERSION}' -X '${MODULE_PATH}/constant.BuildTime=${CURRENT_TIME}'"
+          go build ../cmd/torrent/ # -ldflags "-s -w -X '${MODULE_PATH}/constant.Version=${VERSION}' -X '${MODULE_PATH}/constant.BuildTime=${CURRENT_TIME}'"
+          go build ../cmd/torrent2/ # -ldflags "-s -w -X '${MODULE_PATH}/constant.Version=${VERSION}' -X '${MODULE_PATH}/constant.BuildTime=${CURRENT_TIME}'"
 
           
           if [[ "$GOOS" == "windows" ]]; then
