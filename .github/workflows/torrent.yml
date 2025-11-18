@@ -63,9 +63,9 @@ jobs:
 
           
           if [[ "$GOOS" == "windows" ]]; then
-            zip ../torrent-${GOOS}-${GOARCH}-${VERSION}.zip .
+            zip ../torrent-${GOOS}-${GOARCH}-${VERSION}.zip *
           else
-            tar -czf ../torrent-${GOOS}-${GOARCH}-${VERSION}.tar.gz .
+            tar -czf ../torrent-${GOOS}-${GOARCH}-${VERSION}.tar.gz *
           fi
           cd ..
       - name: 上传产物到 Artifacts
