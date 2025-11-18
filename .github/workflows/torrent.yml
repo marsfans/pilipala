@@ -51,7 +51,7 @@ jobs:
           mkdir -p torrent-${GOOS}-${GOARCH}-${VERSION}
           ls
           echo "开始编译: ${GOOS}-${GOARCH} (${VERSION}) ${CURRENT_TIME}"
-
+          rm -rf go.work
           cd torrent-${GOOS}-${GOARCH}-${VERSION}
           # go mod init
           # go build -trimpath -ldflags '-X "github.com/anacrolix/torrent/constant.Version=${VERSION}" -X "github.com/anacrolix/torrent/constant.BuildTime=${CURRENT_TIME}" -w -s -buildid=' \ 
