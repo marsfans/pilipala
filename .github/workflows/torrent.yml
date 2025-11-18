@@ -48,7 +48,7 @@ jobs:
           export VERSION=$(git describe --tags --abbrev=0)
           export CURRENT_TIME=$(date +'%Y-%m-%d %H:%M:%S')
           MODULE_PATH=$(sed -n '1s/^module //p' go.mod)
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "version=$VERSION" >> $GITHUB_ENV
           mkdir -p torrent-${GOOS}-${GOARCH}-${VERSION}
           ls
           echo "开始编译: ${GOOS}-${GOARCH} (${VERSION}) ${CURRENT_TIME}"
@@ -72,9 +72,10 @@ jobs:
       - name: 上传产物到 Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: torrent-${{ matrix.goos }}-${{ matrix.goarch }}-${{ env.VERSION }}
-          path: torrent-${{ matrix.goos }}-${{ matrix.goarch }}-${{ env.VERSION }}/*
-
+          name: torrent-${{ matrix.goos }}-${{ matrix.goarch }}-${{ env.version }}
+          path: torrent-${{ matrix.goos }}-${{ matrix.goarch }}-${{ env.version }}.*
+    outputs:
+      version: ${{ steps.set_version.outputs.version }}
   
   release:
     needs: build
@@ -88,13 +89,13 @@ jobs:
       - name: 创建 Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: "torrent_${{ env.VERSION }}"
-          name: "torrent ${{ env.VERSION }}"
+          tag_name: "torrent_${{ needs.build.outputs.version }}"
+          name: "torrent ${{ needs.build.outputs.version }}"
           files: release-files/**/*
           draft: false
           prerelease: false
           body: |
-            torrent build torrent ${{ env.VERSION }}
+            torrent build torrent ${{ needs.build.outputs.version }}
             平台打包说明：
             - Linux/macOS: tar.gz
             - Windows: zip
