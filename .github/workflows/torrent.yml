@@ -71,8 +71,8 @@ jobs:
       - name: 上传产物到 Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: torrent-${{ matrix.goos }}-${{ matrix.goarch }}-${ VERSION }
-          path: torrent-${{ matrix.goos }}-${{ matrix.goarch }}-${ VERSION }/*
+          name: torrent-${{ matrix.goos }}-${{ matrix.goarch }}-${VERSION}
+          path: torrent-${{ matrix.goos }}-${{ matrix.goarch }}-${VERSION}/*
 
   
   release:
@@ -87,13 +87,13 @@ jobs:
       - name: 创建 Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: "torrent_${ VERSION }"
-          name: "torrent ${ VERSION }"
+          tag_name: "torrent_${VERSION}"
+          name: "torrent ${VERSION}"
           files: release-files/**/*
           draft: false
           prerelease: false
           body: |
-            torrent build torrent ${ VERSION }
+            torrent build torrent ${VERSION}
             平台打包说明：
             - Linux/macOS: tar.gz
             - Windows: zip
