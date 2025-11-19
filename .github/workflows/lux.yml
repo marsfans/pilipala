@@ -83,7 +83,7 @@ jobs:
           fi
 
           # build commands (adjust paths if needed)
-          GOOS=$GOOS GOARCH=$GOARCH go build -o "${OUTDIR}/magnet-metainfo${BIN_EXT}"
+          GOOS=$GOOS GOARCH=$GOARCH go build -ldflags "-s -w -X '${MODULE_PATH}/constant.Version=${VERSION}' -X '${MODULE_PATH}/constant.BuildTime=${CURRENT_TIME}'" -o "${OUTDIR}/lux${BIN_EXT}"
 
 
           # 打包
@@ -125,4 +125,5 @@ jobs:
             - Windows: zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 
