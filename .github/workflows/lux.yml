@@ -83,7 +83,7 @@ jobs:
           fi
 
           # build commands (adjust paths if needed)
-          GOOS=$GOOS GOARCH=$GOARCH go build -o "${OUTDIR}/magnet-metainfo${BIN_EXT}" ./cmd/magnet-metainfo/
+          GOOS=$GOOS GOARCH=$GOARCH go build -o "${OUTDIR}/magnet-metainfo${BIN_EXT}"
 
 
           # 打包
@@ -125,3 +125,4 @@ jobs:
             - Windows: zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
