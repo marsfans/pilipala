@@ -1,0 +1,127 @@
+name: Multi-arch lux build & release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tags:
+        description: '指定 lux 版本号（如 v0.24.1 或 latest）'
+        required: true
+        default: '0.24.1'
+
+permissions:
+  contents: write
+  packages: write
+  issues: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: [linux, windows, darwin]
+        goarch: [amd64, arm64]
+
+    outputs:
+      # 将 set_version 步骤的输出作为 job 输出，供后续 release job 使用
+      version: ${{ steps.set_version.outputs.version }}
+
+    steps:
+      - name: Checkout specified repository
+        uses: actions/checkout@v4
+        with:
+          repository: 'iawia002/lux'
+          fetch-depth: 0
+
+      - name: Install Go 1.25.x
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.x'
+
+      - name: Set timezone to Asia/Shanghai
+        run: |
+          sudo ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+          date
+
+      - name: Get version from git tag and export
+        id: set_version
+        run: |
+          # 读取最近的 tag；如果你想允许 workflow_dispatch 手动传入 tag，可以用 github.event.inputs.tags 覆盖
+          if [ "${{ github.event.inputs.tags }}" != "" ] && [ "${{ github.event.inputs.tags }}" != "latest" ]; then
+            VERSION="${{ github.event.inputs.tags }}"
+          else
+            # 如果仓库没有 tag，git describe 会失败；这里尽量保证 fetch-depth=0 已设置
+            VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          fi
+          echo "Detected version: $VERSION"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          # set job step output for later job outputs
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: 编译 torrent (matrix)
+        run: |
+          set -e
+          GOOS=${{ matrix.goos }}
+          GOARCH=${{ matrix.goarch }}
+          VERSION=${VERSION}
+          CURRENT_TIME=$(date +'%Y-%m-%d %H:%M:%S')
+
+          MODULE_PATH=$(sed -n '1s/^module //p' go.mod || true)
+          echo "module path: ${MODULE_PATH}"
+          echo "开始编译: ${GOOS}-${GOARCH} (${VERSION}) ${CURRENT_TIME}"
+
+          # create output dir
+          OUTDIR="lux-${GOOS}-${GOARCH}-${VERSION}"
+          mkdir -p "${OUTDIR}"
+
+          # clean go.work if present to avoid unexpected module resolution
+
+          # Build each command binary into the OUTDIR.
+          # For windows add .exe extension.
+          BIN_EXT=""
+          if [[ "$GOOS" == "windows" ]]; then
+            BIN_EXT=".exe"
+          fi
+
+          # build commands (adjust paths if needed)
+          GOOS=$GOOS GOARCH=$GOARCH go build -o "${OUTDIR}/magnet-metainfo${BIN_EXT}" ./cmd/magnet-metainfo/
+
+
+          # 打包
+          if [[ "$GOOS" == "windows" ]]; then
+            (cd "${OUTDIR}" && zip -r "../${OUTDIR}.zip" .)
+          else
+            (cd "${OUTDIR}" && tar -czf "../${OUTDIR}.tar.gz" .)
+          fi
+        env:
+          VERSION: ${{ env.VERSION }}
+
+      - name: 上传产物到 Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: lux-${{ matrix.goos }}-${{ matrix.goarch }}-${{ env.VERSION }}
+          path: |
+            lux-${{ matrix.goos }}-${{ matrix.goarch }}-${{ env.VERSION }}.*
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: 下载所有产物
+        uses: actions/download-artifact@v4
+        with:
+          path: release-files
+
+      - name: 创建 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "lux_${{ needs.build.outputs.version }}"
+          name: "lux ${{ needs.build.outputs.version }}"
+          files: release-files/**/*
+          draft: false
+          prerelease: false
+          body: |
+            lux build lux ${{ needs.build.outputs.version }}
+            平台打包说明：
+            - Linux/macOS: tar.gz
+            - Windows: zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
