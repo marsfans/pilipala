@@ -16,36 +16,29 @@ on:
         required: false
         default: ''
 
-permissions:
-  contents: read
 
 jobs:
-  build-matrix:
-    runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.make-matrix.outputs.matrix }}
-    steps:
-      - name: Generate matrix (platforms)
-        id: make-matrix
-        run: |
-          # 这里定义要并行构建的平台/运行时
-          python3 - <<'PY'
-import json
-matrix = {"include": [
-  {"os":"windows-latest","runtime":"win-x64","rid":"win-x64"},
-  {"os":"ubuntu-latest","runtime":"linux-x64","rid":"linux-x64"},
-  {"os":"ubuntu-latest","runtime":"linux-arm64","rid":"linux-arm64"},
-  {"os":"macos-latest","runtime":"osx-x64","rid":"osx-x64"}
-]}
-print("::set-output name=matrix::" + json.dumps(matrix))
-PY
-
   build:
-    needs: build-matrix
-    runs-on: ${{ matrix.os }}
+    # 并行矩阵：每项会在对应 runner 上并行运行
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.build-matrix.outputs.matrix) }}
+      matrix:
+        include:
+          - os: windows-latest
+            runtime: win-x64
+            rid: win-x64
+          - os: ubuntu-latest
+            runtime: linux-x64
+            rid: linux-x64
+          - os: ubuntu-latest
+            runtime: linux-arm64
+            rid: linux-arm64
+          - os: macos-latest
+            runtime: osx-x64
+            rid: osx-x64
+
+    runs-on: ${{ matrix.os }}
+
     steps:
       - name: Checkout target repository (full history)
         uses: actions/checkout@v4
@@ -53,18 +46,19 @@ PY
           repository: ${{ github.event.inputs.repository }}
           ref: ${{ github.event.inputs.ref }}
           fetch-depth: 0
-          # 如果目标 repo 是私有的，并且你在触发时传入了 token（比如 PERSONAL_TOKEN），
-          # 需要在下面一行取消注释并把 token 名称放到 workflow_dispatch 的 token 输入里
+          # 如果目标 repo 是私有的并且你在触发时传入了 token（例如 PERSONAL_TOKEN）：
+          # 取消下面注释并把 token 输入设为 SECRET 名称，然后在触发时填写该 secret 名称
           # token: ${{ secrets[ github.event.inputs.token ] }}
 
-      - name: Show meta
+      - name: Show repo/ref info
         run: |
           echo "Repo: ${{ github.event.inputs.repository }}"
           echo "Ref: ${{ github.event.inputs.ref }}"
           echo "Runner OS: $RUNNER_OS"
           git --no-pager log -1 --pretty=format:"%h %s (%ci)" || true
 
-      - name: Setup .NET
+      # -------- 通用：根据需要设置 .NET（若目标不是 dotnet，请替换这些步骤为你的构建步骤） -----------
+      - name: Setup .NET 9
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '9.0.x'
@@ -77,31 +71,42 @@ PY
           set -eux
           OUT=./publish/${{ matrix.rid }}
           mkdir -p "$OUT"
-          # dotnet publish 示例，按需要替换 runtime 或添加 self-contained 等参数
           dotnet publish -c Release -r ${{ matrix.rid }} --self-contained false -o "$OUT"
         shell: bash
 
-      - name: Package artifact (zip)
+      # -------- 打包 artifact（Windows 使用 7z，Linux/macOS 使用 zip） -----------
+      - name: Package artifact
+        id: package
         run: |
           set -eux
           OUT=publish/${{ matrix.rid }}
           ZIPNAME=artifact-${{ github.event.inputs.ref }}-${{ matrix.rid }}.zip
-          if [ "$(uname)" = "Darwin" ] || [ "${{ matrix.os }}" = "windows-latest" ]; then
-            # macOS / Linux: 使用 zip
-            apt-get update -y || true
-            apt-get install -y zip || true
-            zip -r "$ZIPNAME" "$OUT"
+
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            # windows runner 上通常预装 7z；使用 powershell 打包以兼容路径
+            powershell -Command "Add-Type -AssemblyName 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::CreateFromDirectory('${OUT}', '${ZIPNAME}')"
           else
+            # ubuntu/macos: 安装 zip（在 runner 已有时 apt-get/install 会自动跳过/失败安全）
+            if command -v apt-get >/dev/null 2>&1; then
+              sudo apt-get update -y || true
+              sudo apt-get install -y zip || true
+            fi
+            if command -v brew >/dev/null 2>&1; then
+              brew install zip || true
+            fi
             zip -r "$ZIPNAME" "$OUT"
           fi
-          echo "ZIP=$ZIPNAME" >> $GITHUB_OUTPUT
+
+          echo "zipname=$ZIPNAME" >> "$GITHUB_OUTPUT"
+        shell: bash
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: build-${{ github.event.inputs.ref }}-{{ matrix.rid }}
-          path: artifact-${{ github.event.inputs.ref }}-${{ matrix.rid }}.zip
+          name: build-${{ github.event.inputs.ref }}-${{ matrix.rid }}-${{ matrix.os }}
+          path: ${{ steps.package.outputs.zipname }}
 
+      # 如果 ref 是 tag（以 v 开头），可选创建 Release 并附加 artifact（需要 GITHUB_TOKEN）
       - name: Create GitHub Release (if ref is tag v*)
         if: startsWith(github.event.inputs.ref, 'v')
         uses: softprops/action-gh-release@v1
