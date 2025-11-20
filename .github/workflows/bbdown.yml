@@ -27,12 +27,12 @@ jobs:
           - os: windows-latest
             runtime: win-x64
             rid: win-x64
+          - os: windows-latest
+            runtime: win-arm64
+            rid: win-arm64
           - os: ubuntu-latest
             runtime: linux-x64
             rid: linux-x64
-          - os: ubuntu-latest
-            runtime: linux-arm64
-            rid: linux-arm64
           - os: macos-latest
             runtime: osx-x64
             rid: osx-x64
