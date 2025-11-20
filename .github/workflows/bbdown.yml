@@ -64,7 +64,7 @@ jobs:
           set -eux
           OUT=./publish/${{ matrix.rid }}
           mkdir -p "$OUT"
-          dotnet publish -c Release -r ${{ matrix.rid }} --self-contained false -o "$OUT"
+          dotnet publish -c Release -r ${{ matrix.rid }} -o "$OUT"
         shell: bash
 
       # -------- 打包 artifact（Windows 使用 7z，Linux/macOS 使用 zip） -----------
