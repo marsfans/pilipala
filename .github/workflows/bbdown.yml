@@ -1,0 +1,111 @@
+name: Multi-Platform bbdown Build (external repo)
+
+on:
+  workflow_dispatch:
+    inputs:
+      repository:
+        description: '要 checkout 的仓库，格式 owner/repo，例如 nilaoda/BBDown'
+        required: true
+        default: 'nilaoda/BBDown'
+      ref:
+        description: '要构建的 ref（branch/tag/commit），例如 main 或 v1.0.0'
+        required: true
+        default: 'main'
+      token:
+        description: '可选：当目标仓库为私有时填入 PAT 的 Secret 名称（例如 PERSONAL_TOKEN）'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  build-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.make-matrix.outputs.matrix }}
+    steps:
+      - name: Generate matrix (platforms)
+        id: make-matrix
+        run: |
+          # 这里定义要并行构建的平台/运行时
+          python3 - <<'PY'
+import json
+matrix = {"include": [
+  {"os":"windows-latest","runtime":"win-x64","rid":"win-x64"},
+  {"os":"ubuntu-latest","runtime":"linux-x64","rid":"linux-x64"},
+  {"os":"ubuntu-latest","runtime":"linux-arm64","rid":"linux-arm64"},
+  {"os":"macos-latest","runtime":"osx-x64","rid":"osx-x64"}
+]}
+print("::set-output name=matrix::" + json.dumps(matrix))
+PY
+
+  build:
+    needs: build-matrix
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.build-matrix.outputs.matrix) }}
+    steps:
+      - name: Checkout target repository (full history)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.inputs.repository }}
+          ref: ${{ github.event.inputs.ref }}
+          fetch-depth: 0
+          # 如果目标 repo 是私有的，并且你在触发时传入了 token（比如 PERSONAL_TOKEN），
+          # 需要在下面一行取消注释并把 token 名称放到 workflow_dispatch 的 token 输入里
+          # token: ${{ secrets[ github.event.inputs.token ] }}
+
+      - name: Show meta
+        run: |
+          echo "Repo: ${{ github.event.inputs.repository }}"
+          echo "Ref: ${{ github.event.inputs.ref }}"
+          echo "Runner OS: $RUNNER_OS"
+          git --no-pager log -1 --pretty=format:"%h %s (%ci)" || true
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Publish for runtime ${{ matrix.rid }}
+        run: |
+          set -eux
+          OUT=./publish/${{ matrix.rid }}
+          mkdir -p "$OUT"
+          # dotnet publish 示例，按需要替换 runtime 或添加 self-contained 等参数
+          dotnet publish -c Release -r ${{ matrix.rid }} --self-contained false -o "$OUT"
+        shell: bash
+
+      - name: Package artifact (zip)
+        run: |
+          set -eux
+          OUT=publish/${{ matrix.rid }}
+          ZIPNAME=artifact-${{ github.event.inputs.ref }}-${{ matrix.rid }}.zip
+          if [ "$(uname)" = "Darwin" ] || [ "${{ matrix.os }}" = "windows-latest" ]; then
+            # macOS / Linux: 使用 zip
+            apt-get update -y || true
+            apt-get install -y zip || true
+            zip -r "$ZIPNAME" "$OUT"
+          else
+            zip -r "$ZIPNAME" "$OUT"
+          fi
+          echo "ZIP=$ZIPNAME" >> $GITHUB_OUTPUT
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ github.event.inputs.ref }}-{{ matrix.rid }}
+          path: artifact-${{ github.event.inputs.ref }}-${{ matrix.rid }}.zip
+
+      - name: Create GitHub Release (if ref is tag v*)
+        if: startsWith(github.event.inputs.ref, 'v')
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.event.inputs.ref }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
