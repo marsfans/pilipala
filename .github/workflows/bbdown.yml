@@ -71,31 +71,28 @@ jobs:
         run: |
           set -eux
           OUT=publish/${{ matrix.rid }}
-          ZIPNAME=artifact-${{ github.event.inputs.ref }}-${{ matrix.rid }}.zip
+          BASENAME=bbdown-${{ github.event.inputs.ref }}-${{ matrix.rid }}
 
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            # windows runner 上通常预装 7z；使用 powershell 打包以兼容路径
+            # Windows 打包 zip
+            ZIPNAME=${BASENAME}.zip
             powershell -Command "Add-Type -AssemblyName 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::CreateFromDirectory('${OUT}', '${ZIPNAME}')"
+            echo "artifact=$ZIPNAME" >> "$GITHUB_OUTPUT"
           else
-            # ubuntu/macos: 安装 zip（在 runner 已有时 apt-get/install 会自动跳过/失败安全）
-            if command -v apt-get >/dev/null 2>&1; then
-              sudo apt-get update -y || true
-              sudo apt-get install -y zip || true
-            fi
-            if command -v brew >/dev/null 2>&1; then
-              brew install zip || true
-            fi
-            zip -r "$ZIPNAME" "$OUT"
+            # Linux/Mac 打包 tar.gz
+            TAR=${BASENAME}.tar.gz
+            tar -czf "$TAR" -C "$OUT" .
+            echo "artifact=$TAR" >> "$GITHUB_OUTPUT"
           fi
-
-          echo "zipname=$ZIPNAME" >> "$GITHUB_OUTPUT"
         shell: bash
+
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: bbdown-${{ github.event.inputs.ref }}-${{ matrix.rid }}-${{ matrix.os }}
-          path: ${{ steps.package.outputs.zipname }}
+          path: ${{ steps.package.outputs.artifact }}
+
 
   # 当 ref 是以 v 开头的 tag（比如 v1.2.3）时，执行 release 作业。
   # release 作业依赖 build（等所有矩阵完成），然后下载所有 artifacts、创建 release 并附加 zip 文件。
@@ -124,6 +121,6 @@ jobs:
           # release title，可自定义为同名或带前缀
           name: bbdown ${{ github.event.inputs.ref }}
           # 将 artifacts 目录下所有 zip 上传到 release。glob 支持通配。
-          files: artifacts/**/*.zip
+          files: artifacts/**/**
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
