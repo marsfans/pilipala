@@ -68,10 +68,18 @@ jobs:
           set -eux
           OUT=./publish/${{ matrix.rid }}
           mkdir -p "$OUT"
-          if [ "${{ matrix.rid }}" = "linux-arm64" ]; then
-            dotnet publish -c Release -r ${{ matrix.rid }} -p:StripSymbols=true -p:CppCompilerAndLinker=clang-9 -p:SysRoot=/crossrootfs/arm64  -o "$OUT"
-          else:
-            dotnet publish -c Release -r ${{ matrix.rid }} -o "$OUT"
+
+          RID="${{ matrix.rid }}"
+
+          if [ "$RID" = "linux-arm64" ]; then
+            dotnet publish -c Release -r "$RID" \
+              -p:StripSymbols=true \
+              -p:CppCompilerAndLinker=clang-9 \
+              -p:SysRoot=/crossrootfs/arm64 \
+              -o "$OUT"
+          else
+            dotnet publish -c Release -r "$RID" -o "$OUT"
+          fi
         shell: bash
 
       # -------- 打包 artifact（Windows 使用 7z，Linux/macOS 使用 zip） -----------
