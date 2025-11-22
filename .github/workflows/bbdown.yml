@@ -66,13 +66,14 @@ jobs:
       - name: Publish for runtime ${{ matrix.rid }}
         run: |
           set -eux
-          CODENAME=$(lsb_release -cs)
+          
           OUT=./publish/${{ matrix.rid }}
           mkdir -p "$OUT"
 
           RID="${{ matrix.rid }}"
 
           if [ "$RID" = "linux-arm64" ]; then
+            export CODENAME=$(lsb_release -cs)
             sudo apt-get update -y
             sudo apt-get install -y wget gnupg ca-certificates lsb-release software-properties-common apt-transport-https || true
             # 导入 LLVM GPG key
