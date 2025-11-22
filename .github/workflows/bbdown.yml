@@ -66,6 +66,7 @@ jobs:
       - name: Publish for runtime ${{ matrix.rid }}
         run: |
           set -eux
+          CODENAME=$(lsb_release -cs)
           OUT=./publish/${{ matrix.rid }}
           mkdir -p "$OUT"
 
