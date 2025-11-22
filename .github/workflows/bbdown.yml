@@ -8,14 +8,13 @@ on:
         required: true
         default: 'nilaoda/BBDown'
       ref:
-        description: '要构建的 ref（branch/tag/commit），例如 main 或 v1.0.0'
+        description: '要构建的 ref（branch/tag/commit），例如 main 或 v1.0.0。若要创建 release，请输入以 v 开头的 tag（例如 v1.2.3）'
         required: true
-        default: 'main'
+        default: 'v1.6.3'
       token:
         description: '可选：当目标仓库为私有时填入 PAT 的 Secret 名称（例如 PERSONAL_TOKEN）'
         required: false
         default: ''
-
 
 jobs:
   build:
@@ -49,7 +48,6 @@ jobs:
           # 取消下面注释并把 token 输入设为 SECRET 名称，然后在触发时填写该 secret 名称
           # token: ${{ secrets[ github.event.inputs.token ] }}
 
-      
       # -------- 通用：根据需要设置 .NET（若目标不是 dotnet，请替换这些步骤为你的构建步骤） -----------
       - name: Setup .NET 9
         uses: actions/setup-dotnet@v3
@@ -96,14 +94,36 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: build-${{ github.event.inputs.ref }}-${{ matrix.rid }}-${{ matrix.os }}
+          name: bbdown-${{ github.event.inputs.ref }}-${{ matrix.rid }}-${{ matrix.os }}
           path: ${{ steps.package.outputs.zipname }}
 
-      # 如果 ref 是 tag（以 v 开头），可选创建 Release 并附加 artifact（需要 GITHUB_TOKEN）
-      - name: Create GitHub Release (if ref is tag v*)
-        if: startsWith(github.event.inputs.ref, 'v')
+  # 当 ref 是以 v 开头的 tag（比如 v1.2.3）时，执行 release 作业。
+  # release 作业依赖 build（等所有矩阵完成），然后下载所有 artifacts、创建 release 并附加 zip 文件。
+  release:
+    if: startsWith(github.event.inputs.ref, 'v')
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all build artifacts
+        # 不指定 name 会把所有 artifact 全部下载到 ./artifacts 目录
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: List downloaded files (for debug)
+        run: |
+          echo "files under artifacts:"
+          find artifacts -type f -maxdepth 3 -print
+        shell: bash
+
+      - name: Create GitHub Release and upload assets
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ github.event.inputs.ref }}
+          # 使用触发输入的 ref 作为 tag 名（例如 v1.2.3）
+          tag_name: bbdown_${{ github.event.inputs.ref }}
+          # release title，可自定义为同名或带前缀
+          name: bbdown ${{ github.event.inputs.ref }}
+          # 将 artifacts 目录下所有 zip 上传到 release。glob 支持通配。
+          files: artifacts/**/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
