@@ -73,20 +73,19 @@ jobs:
           RID="${{ matrix.rid }}"
 
           if [ "$RID" = "linux-arm64" ]; then
-            # export CODENAME=$(lsb_release -cs)
-            # sudo apt-get update -y
-            # sudo apt-get install -y wget gnupg ca-certificates lsb-release software-properties-common apt-transport-https || true
-            # # 导入 LLVM GPG key
-            # wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo gpg --dearmor -o /usr/share/keyrings/llvm-archive-keyring.gpg
-            # # 添加 llvm-toolchain-<codename>-9 仓库
-            # echo "deb [signed-by=/usr/share/keyrings/llvm-archive-keyring.gpg] http://apt.llvm.org/${CODENAME}/ llvm-toolchain-${CODENAME}-9 main" | sudo tee /etc/apt/sources.list.d/llvm-9.list
+            docker run --rm \
+            -v "$PWD:/workspace" \
+            -w /workspace \
+            mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-arm64-20220312201346-b2c2436 \
+            
             sudo apt-get update -y
             sudo apt-get install -y wget build-essential clang lld libicu-dev zlib1g libcurl4-openssl-dev libkrb5-dev
-            dotnet publish -c Release -r "$RID" \
-              -p:StripSymbols=true \
-              -p:CppCompilerAndLinker=clang \
-              -p:SysRoot=/crossrootfs/arm64 \
-              -o "$OUT"
+            bash -c "
+              set -e
+  
+              # 编译 Native AOT 输出到挂载的 artifact 目录
+              dotnet publish BBDown -r "$RID" -c Release -p:StripSymbols=true -p:CppCompilerAndLinker=clang-9 -p:SysRoot=/crossrootfs/arm64 -o "$OUT"
+            "
           else
             dotnet publish -c Release -r "$RID" -o "$OUT"
           fi
