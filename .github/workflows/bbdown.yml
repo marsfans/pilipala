@@ -53,24 +53,6 @@ jobs:
           # 如果目标 repo 是私有的并且你在触发时传入了 token（例如 PERSONAL_TOKEN）：
           # 取消下面注释并把 token 输入设为 SECRET 名称，然后在触发时填写该 secret 名称
           # token: ${{ secrets[ github.event.inputs.token ] }}
-      
-      - name: Show hardware info
-        shell: bash
-        run: |
-          echo "=== CPU 信息 ==="
-          if command -v lscpu >/dev/null 2>&1; then lscpu; fi
-          if command -v sysctl >/dev/null 2>&1; then sysctl -a | grep machdep.cpu | head -20; fi
-
-          echo "=== 内存 信息 ==="
-          if command -v free >/dev/null 2>&1; then free -h; fi
-          if [ -f /proc/meminfo ]; then head -20 /proc/meminfo; fi
-          if command -v sysctl >/dev/null 2>&1; then sysctl hw.memsize 2>/dev/null; fi
-
-          echo "=== 磁盘 信息 ==="
-          df -h
-
-          echo "=== OS 信息 ==="
-          uname -a || ver || systeminfo
 
       # -------- 通用：根据需要设置 .NET（若目标不是 dotnet，请替换这些步骤为你的构建步骤） -----------
       - name: Setup .NET 9
