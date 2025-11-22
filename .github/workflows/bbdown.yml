@@ -73,18 +73,18 @@ jobs:
           RID="${{ matrix.rid }}"
 
           if [ "$RID" = "linux-arm64" ]; then
-            export CODENAME=$(lsb_release -cs)
+            # export CODENAME=$(lsb_release -cs)
+            # sudo apt-get update -y
+            # sudo apt-get install -y wget gnupg ca-certificates lsb-release software-properties-common apt-transport-https || true
+            # # 导入 LLVM GPG key
+            # wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo gpg --dearmor -o /usr/share/keyrings/llvm-archive-keyring.gpg
+            # # 添加 llvm-toolchain-<codename>-9 仓库
+            # echo "deb [signed-by=/usr/share/keyrings/llvm-archive-keyring.gpg] http://apt.llvm.org/${CODENAME}/ llvm-toolchain-${CODENAME}-9 main" | sudo tee /etc/apt/sources.list.d/llvm-9.list
             sudo apt-get update -y
-            sudo apt-get install -y wget gnupg ca-certificates lsb-release software-properties-common apt-transport-https || true
-            # 导入 LLVM GPG key
-            wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo gpg --dearmor -o /usr/share/keyrings/llvm-archive-keyring.gpg
-            # 添加 llvm-toolchain-<codename>-9 仓库
-            echo "deb [signed-by=/usr/share/keyrings/llvm-archive-keyring.gpg] http://apt.llvm.org/${CODENAME}/ llvm-toolchain-${CODENAME}-9 main" | sudo tee /etc/apt/sources.list.d/llvm-9.list
-            sudo apt-get update -y
-            sudo apt-get install -y wget build-essential clang-9 lld-9 libicu-dev zlib1g libcurl4-openssl-dev libkrb5-dev
+            sudo apt-get install -y wget build-essential clang lld libicu-dev zlib1g libcurl4-openssl-dev libkrb5-dev
             dotnet publish -c Release -r "$RID" \
               -p:StripSymbols=true \
-              -p:CppCompilerAndLinker=clang-9 \
+              -p:CppCompilerAndLinker=clang \
               -p:SysRoot=/crossrootfs/arm64 \
               -o "$OUT"
           else
