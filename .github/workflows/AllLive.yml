@@ -33,8 +33,7 @@ jobs:
       - name: Build Release
         run: |
          cd AllLive.UWP
-         dotnet publish -c Release -r win-x64 --self-contained true -o ./build/output
-
+         msbuild AllLive.UWP.sln /p:Configuration=Release /p:Platform=x64
       - name: Package ZIP
         run: |
           cd AllLive.UWP/build
