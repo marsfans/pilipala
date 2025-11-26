@@ -31,11 +31,13 @@ jobs:
         run: dotnet restore
 
       - name: Build Release
-        run: dotnet publish -c Release -r win-x64 --self-contained true -o ./build/output
+        run: |
+         cd AllLive.UWP
+         dotnet publish -c Release -r win-x64 --self-contained true -o ./build/output
 
       - name: Package ZIP
         run: |
-          cd build
+          cd AllLive.UWP/build
           Compress-Archive -Path output\* -DestinationPath AllLive-${{ github.event.inputs.tag }}-win-x64.zip
 
       # —— 可选：如果你有 msix / installer 脚本 ——  
@@ -48,6 +50,6 @@ jobs:
           tag_name: AllLive-${{ github.event.inputs.tag }}
           name: AllLive ${{ github.event.inputs.tag }}
           files: |
-            build/AllLive-${{ github.event.inputs.tag }}-win-x64.zip
-            build/output/YourApp.exe
+            AllLive.UWP/build/AllLive-${{ github.event.inputs.tag }}-win-x64.zip
+            AllLive.UWP/build/output/YourApp.exe
             # （如果你有 msix / installer，也加在这里）
