@@ -33,7 +33,10 @@ jobs:
         run: msbuild AllLive.UWP/AllLive.UWP.csproj /t:Restore /p:Configuration=Release
 
       - name: Build UWP project
-        run: msbuild AllLive.UWP/AllLive.UWP.csproj /p:Configuration=Release /p:Platform=x64 /p:GenerateAppxPackageOnBuild=true /p:AppxBundle=Never /p:UapAppxPackageBuildMode=SideloadOnly
+        run: |
+         # msbuild AllLive.UWP/AllLive.UWP.csproj /p:Configuration=Release /p:Platform=x64 /p:GenerateAppxPackageOnBuild=true /p:AppxBundle=Never /p:UapAppxPackageBuildMode=SideloadOnly
+         msbuild AllLive.UWP\\AllLive.UWP.csproj /p:Configuration=Release /p:Platform=x64 /p:OutputPath=build_output
+         
       # —— 可选：如果你有 msix / installer 脚本 ——  
       # - name: Build installer / msix
       #   run: <your msix build command>
