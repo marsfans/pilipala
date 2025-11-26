@@ -1,0 +1,53 @@
+name: Build & Release on AllLive
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release version tag (e.g. v1.0.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build_and_release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          repository: xiaoyaocz/AllLive
+          fetch-depth: 0
+
+      # —— 示例: .NET 项目构建 —— 根据你项目语言 /构建系统修改
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build Release
+        run: dotnet publish -c Release -r win-x64 --self-contained true -o ./build/output
+
+      - name: Package ZIP
+        run: |
+          cd build
+          Compress-Archive -Path output\* -DestinationPath AllLive-${{ github.event.inputs.tag }}-win-x64.zip
+
+      # —— 可选：如果你有 msix / installer 脚本 ——  
+      # - name: Build installer / msix
+      #   run: <your msix build command>
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: AllLive-${{ github.event.inputs.tag }}
+          name: AllLive ${{ github.event.inputs.tag }}
+          files: |
+            build/AllLive-${{ github.event.inputs.tag }}-win-x64.zip
+            build/output/YourApp.exe
+            # （如果你有 msix / installer，也加在这里）
