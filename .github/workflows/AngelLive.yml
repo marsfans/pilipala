@@ -16,6 +16,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          repository: pcccccc/AngelLive
+          fetch-depth: 0
 
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode.app
@@ -48,6 +51,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          repository: pcccccc/AngelLive
+          fetch-depth: 0
 
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode.app
@@ -83,6 +89,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          repository: pcccccc/AngelLive
+          fetch-depth: 0
 
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode.app
