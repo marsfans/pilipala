@@ -1,0 +1,113 @@
+name: Build AngelLive
+
+on:
+  workflow_dispatch:                # 手动触发
+    inputs:
+      build_type:
+        description: "构建类型"
+        required: true
+        default: "Release"
+
+jobs:
+  build-macos:
+    name: Build macOS App
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app
+
+      - name: Build macOS target
+        run: |
+          xcodebuild \
+            -workspace "AngelLive.xcworkspace" \
+            -scheme "AngelLive-macOS" \
+            -configuration ${{ github.event.inputs.build_type }} \
+            -sdk macosx \
+            -archivePath build/macos/AngelLive.xcarchive \
+            archive
+
+      - name: Export .app and zip
+        run: |
+          mkdir -p output/macos
+          cp -R build/macos/AngelLive.xcarchive/Products/Applications/*.app output/macos/
+          cd output/macos && zip -r AngelLive_macOS.zip *.app
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AngelLive-macOS
+          path: output/macos/*.zip
+
+  build-ios:
+    name: Build iOS App (No Signing)
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app
+
+      - name: Build iOS target
+        run: |
+          xcodebuild \
+            -workspace "AngelLive.xcworkspace" \
+            -scheme "AngelLive-iOS" \
+            -configuration ${{ github.event.inputs.build_type }} \
+            -sdk iphoneos \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGN_IDENTITY="" \
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            SKIP_INSTALL=NO \
+            archive \
+            -archivePath build/ios/AngelLive.xcarchive
+
+      - name: Export app and zip
+        run: |
+          mkdir -p output/ios
+          cp -R build/ios/AngelLive.xcarchive/Products/Applications/*.app output/ios/
+          cd output/ios && zip -r AngelLive_iOS.zip *.app
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AngelLive-iOS
+          path: output/ios/*.zip
+
+  build-tvos:
+    name: Build tvOS App (No Signing)
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app
+
+      - name: Build tvOS target
+        run: |
+          xcodebuild \
+            -workspace "AngelLive.xcworkspace" \
+            -scheme "SimpleLiveTVOS" \
+            -configuration ${{ github.event.inputs.build_type }} \
+            -sdk appletvos \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGN_IDENTITY="" \
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            SKIP_INSTALL=NO \
+            archive \
+            -archivePath build/tvos/AngelLive_TV.xcarchive
+
+      - name: Export app and zip
+        run: |
+          mkdir -p output/tvos
+          cp -R build/tvos/AngelLive_TV.xcarchive/Products/Applications/*.app output/tvos/
+          cd output/tvos && zip -r AngelLive_tvOS.zip *.app
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AngelLive-tvOS
+          path: output/tvos/*.zip
