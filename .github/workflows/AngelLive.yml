@@ -21,7 +21,7 @@ jobs:
           fetch-depth: 0
 
       - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode.app
+        run: sudo xcode-select -s "/Applications/Xcode_16.2.app"
 
       - name: Build macOS target
         run: |
@@ -56,12 +56,12 @@ jobs:
           fetch-depth: 0
 
       - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode.app
+        run: sudo xcode-select -s "/Applications/Xcode_16.2.app"
 
       - name: Build iOS target
         run: |
           xcodebuild \
-            -workspace "AngelLive.xcworkspace" \
+          -workspace "AngelLive.xcworkspace" \
             -scheme "AngelLive-iOS" \
             -configuration ${{ github.event.inputs.build_type }} \
             -sdk iphoneos \
@@ -94,7 +94,7 @@ jobs:
           fetch-depth: 0
 
       - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode.app
+        run: sudo xcode-select -s "/Applications/Xcode_16.2.app"
 
       - name: Build tvOS target
         run: |
