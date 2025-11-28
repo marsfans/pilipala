@@ -30,13 +30,15 @@ jobs:
         uses: microsoft/setup-msbuild@v1.0.2
       
       - name: Restore dependencies (if any)
-        run: msbuild AllLive.UWP/AllLive.UWP.csproj /t:Restore /p:Configuration=Release
-
+        run: |
+          # msbuild AllLive.UWP/AllLive.UWP.csproj /t:Restore /p:Configuration=Release
+          nuget restore AllLive.sln
+          
       - name: Build UWP project
         run: |
          # msbuild AllLive.UWP/AllLive.UWP.csproj /p:Configuration=Release /p:Platform=x64 /p:GenerateAppxPackageOnBuild=true /p:AppxBundle=Never /p:UapAppxPackageBuildMode=SideloadOnly
-         msbuild AllLive.UWP\\AllLive.UWP.csproj /p:Configuration=Release /p:Platform=x64 /p:OutputPath=build_output
-         
+         # msbuild AllLive.UWP\\AllLive.UWP.csproj /p:Configuration=Release /p:Platform=x64 /p:OutputPath=build_output
+         msbuild AllLive.sln /p:Configuration=Release /p:Platform=x64 /p:AppxBundle=Never /p:UapAppxPackageBuildMode=StoreUpload
       # —— 可选：如果你有 msix / installer 脚本 ——  
       # - name: Build installer / msix
       #   run: <your msix build command>
