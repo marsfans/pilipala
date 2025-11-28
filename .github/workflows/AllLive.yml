@@ -7,6 +7,7 @@ on:
         description: 'Release version tag (e.g. v1.0.0)'
         required: true
         type: string
+        default: '2.3.2.0'
 
 permissions:
   contents: write
@@ -39,6 +40,20 @@ jobs:
          # msbuild AllLive.UWP/AllLive.UWP.csproj /p:Configuration=Release /p:Platform=x64 /p:GenerateAppxPackageOnBuild=true /p:AppxBundle=Never /p:UapAppxPackageBuildMode=SideloadOnly
          # msbuild AllLive.UWP\\AllLive.UWP.csproj /p:Configuration=Release /p:Platform=x64 /p:OutputPath=build_output
          msbuild AllLive.sln /p:Configuration=Release /p:Platform=x64 /p:AppxBundle=Never /p:UapAppxPackageBuildMode=StoreUpload
+      
+      - name: Zip UWP package
+        shell: powershell
+        run: |
+          $src = "AllLive.UWP\AppPackages\AllLive.UWP_*_x64_Test"
+          $out = "AllLive.UWP_${{ github.event.inputs.tag }}_x64_Test.zip"
+          Compress-Archive -Path "$src\*" -DestinationPath $out -CompressionLevel Optimal -Force
+      
+      - name: Upload zip artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AllLive-UWP-${{ github.event.inputs.tag }}
+          path: AllLive.UWP_${{ github.event.inputs.tag }}_x64_Test.zip
+
       # —— 可选：如果你有 msix / installer 脚本 ——  
       # - name: Build installer / msix
       #   run: <your msix build command>
@@ -49,6 +64,5 @@ jobs:
           tag_name: AllLive-${{ github.event.inputs.tag }}
           name: AllLive ${{ github.event.inputs.tag }}
           files: |
-            AllLive.UWP/bin/Release/**/*
-            AllLive.UWP/build/output/YourApp.exe
+            AllLive.UWP_${{ github.event.inputs.tag }}_x64_Test.zip
             # （如果你有 msix / installer，也加在这里）
