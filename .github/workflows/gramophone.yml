@@ -46,7 +46,7 @@ jobs:
           echo ${{ secrets.MYAPP_KEYSTORE_BASE64 }} | base64 --decode > app/${{ secrets.MYAPP_UPLOAD_STORE_FILE }}
           chmod +x ./gradlew
           ./gradlew bundleRelease -PMYAPP_UPLOAD_STORE_FILE='${{ secrets.MYAPP_UPLOAD_STORE_FILE }}' -PMYAPP_UPLOAD_KEY_ALIAS='${{ secrets.MYAPP_UPLOAD_KEY_ALIAS }}' -PMYAPP_UPLOAD_STORE_PASSWORD='${{ secrets.MYAPP_UPLOAD_STORE_PASSWORD }}' -PMYAPP_UPLOAD_KEY_PASSWORD='${{ secrets.MYAPP_UPLOAD_KEY_PASSWORD }}'
-          rm -f app/${{ secrets.MYAPP_UPLOAD_STORE_FILE }}
+          # rm -f app/${{ secrets.MYAPP_UPLOAD_STORE_FILE }}
       - name: Find AAB
         run: |
           AAB=$(find . -name "*.aab" | head -n 1)
@@ -61,6 +61,10 @@ jobs:
           java -jar bundletool.jar build-apks \
           --bundle=${{ env.AAB_PATH }} \
           --output="Gramophone-android-${{ github.event.inputs.tags }}.apks" \
+          --ks='${{ secrets.MYAPP_UPLOAD_STORE_FILE }}'
+          --ks-key-alias='${{ secrets.MYAPP_UPLOAD_KEY_ALIAS }}'
+          --ks-pass='pass:${{ secrets.MYAPP_UPLOAD_STORE_PASSWORD }}'
+          --key-pass='pass:${{ secrets.MYAPP_UPLOAD_KEY_ALIAS }}'
           
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v5.0.0
