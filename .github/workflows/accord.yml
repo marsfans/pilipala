@@ -1,0 +1,52 @@
+name: accord build & release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tags:
+        description: '指定 torrent 版本号（如 v1.2.3 或 latest）'
+        required: true
+        default: '1.0.0'
+
+permissions:
+  contents: write
+  packages: write
+  issues: write
+
+jobs:
+  build:
+    name: Build App
+    runs-on: ubuntu-latest
+    steps:
+
+      - uses: actions/checkout@v4
+        with:
+          repository: FoedusProgramme/Accord
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Set release type
+        run: echo releaseType=CI > package.properties
+
+
+      - name: Build with Gradle
+        run: |
+          echo ${{ secrets.MYAPP_KEYSTORE_BASE64 }} | base64 --decode > app/${{ secrets.MYAPP_UPLOAD_STORE_FILE }}
+          chmod +x ./gradlew
+          ./gradlew assembleRelease -PMYAPP_UPLOAD_STORE_FILE='${{ secrets.MYAPP_UPLOAD_STORE_FILE }}' -PMYAPP_UPLOAD_KEY_ALIAS='${{ secrets.MYAPP_UPLOAD_KEY_ALIAS }}' -PMYAPP_UPLOAD_STORE_PASSWORD='${{ secrets.MYAPP_UPLOAD_STORE_PASSWORD }}' -PMYAPP_UPLOAD_KEY_PASSWORD='${{ secrets.MYAPP_UPLOAD_KEY_PASSWORD }}'
+          rm -f app/${{ secrets.MYAPP_UPLOAD_STORE_FILE }}
+      - name: Upload a Build Artifact
+        uses: actions/upload-artifact@v5.0.0
+        with:
+          # Artifact name
+          name: "accord-android-${{ github.event.inputs.tags }}"
+          # A file, directory or wildcard pattern that describes what to upload
+          path: app/build/outputs/apk/release/*
