@@ -47,10 +47,27 @@ jobs:
           chmod +x ./gradlew
           ./gradlew bundleRelease -PMYAPP_UPLOAD_STORE_FILE='${{ secrets.MYAPP_UPLOAD_STORE_FILE }}' -PMYAPP_UPLOAD_KEY_ALIAS='${{ secrets.MYAPP_UPLOAD_KEY_ALIAS }}' -PMYAPP_UPLOAD_STORE_PASSWORD='${{ secrets.MYAPP_UPLOAD_STORE_PASSWORD }}' -PMYAPP_UPLOAD_KEY_PASSWORD='${{ secrets.MYAPP_UPLOAD_KEY_PASSWORD }}'
           rm -f app/${{ secrets.MYAPP_UPLOAD_STORE_FILE }}
+      - name: Find AAB
+        run: |
+          AAB=$(find . -name "*.aab" | head -n 1)
+          echo "AAB_PATH=$AAB" >> $GITHUB_ENV
+
+      - name: Download bundletool
+        run: |
+          wget -O bundletool.jar https://github.com/google/bundletool/releases/latest/download/bundletool-all.jar
+
+      - name: Convert AAB to APKS (universal)
+        run: |
+          java -jar bundletool.jar build-apks \
+          --bundle=${{ env.AAB_PATH }} \
+          --output="Gramophone-android-${{ github.event.inputs.tags }}.apks" \
+          
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v5.0.0
         with:
           # Artifact name
           name: "Gramophone-android-${{ github.event.inputs.tags }}"
           # A file, directory or wildcard pattern that describes what to upload
-          path: app/build/outputs/apk/release/*
+          path: |
+            ${{ env.AAB_PATH }}
+            "Gramophone-android-${{ github.event.inputs.tags }}.apks"
