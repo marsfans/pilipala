@@ -61,9 +61,9 @@ jobs:
           java -jar bundletool.jar build-apks \
           --bundle=${{ env.AAB_PATH }} \
           --output="Gramophone-android-${{ github.event.inputs.tags }}.apks" \
-          --ks='${{ secrets.MYAPP_UPLOAD_STORE_FILE }}'
-          --ks-key-alias='${{ secrets.MYAPP_UPLOAD_KEY_ALIAS }}'
-          --ks-pass='pass:${{ secrets.MYAPP_UPLOAD_STORE_PASSWORD }}'
+          --ks='${{ secrets.MYAPP_UPLOAD_STORE_FILE }}' \
+          --ks-key-alias='${{ secrets.MYAPP_UPLOAD_KEY_ALIAS }}' \
+          --ks-pass='pass:${{ secrets.MYAPP_UPLOAD_STORE_PASSWORD }}' \
           --key-pass='pass:${{ secrets.MYAPP_UPLOAD_KEY_PASSWORD }}'
           
       - name: Upload a Build Artifact
