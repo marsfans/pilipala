@@ -54,8 +54,8 @@ jobs:
 
       - name: Download bundletool
         run: |
-          wget -O bundletool.jar https://github.com/google/bundletool/releases/latest/download/bundletool-all.jar
-
+          wget -O bundletool.jar https://github.com/google/bundletool/releases/download/1.18.2/bundletool-all-1.18.2.jar
+          
       - name: Convert AAB to APKS (universal)
         run: |
           java -jar bundletool.jar build-apks \
@@ -71,3 +71,21 @@ jobs:
           path: |
             ${{ env.AAB_PATH }}
             "Gramophone-android-${{ github.event.inputs.tags }}.apks"
+            
+      - name: 创建 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "gramophone v${{ github.event.inputs.tags }}"
+          name: "gramophone v${{ github.event.inputs.tags }}"
+          files: |
+            ${{ env.AAB_PATH }}
+            "Gramophone-android-${{ github.event.inputs.tags }}.apks"
+          draft: false
+          prerelease: false
+          body: |
+            lux build lux ${{ needs.build.outputs.version }}
+            平台打包说明：
+            - Linux/macOS: tar.gz
+            - Windows: zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
