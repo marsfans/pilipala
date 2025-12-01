@@ -64,7 +64,7 @@ jobs:
           --ks='${{ secrets.MYAPP_UPLOAD_STORE_FILE }}'
           --ks-key-alias='${{ secrets.MYAPP_UPLOAD_KEY_ALIAS }}'
           --ks-pass='pass:${{ secrets.MYAPP_UPLOAD_STORE_PASSWORD }}'
-          --key-pass='pass:${{ secrets.MYAPP_UPLOAD_KEY_ALIAS }}'
+          --key-pass='pass:${{ secrets.MYAPP_UPLOAD_KEY_PASSWORD }}'
           
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v5.0.0
