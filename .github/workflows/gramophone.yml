@@ -84,12 +84,7 @@ jobs:
           files: |
             ${{ env.AAB_PATH }}
             "Gramophone-android-${{ github.event.inputs.tags }}.apks"
-          draft: false
-          prerelease: false
-          body: |
-            lux build lux ${{ needs.build.outputs.version }}
-            平台打包说明：
-            - Linux/macOS: tar.gz
-            - Windows: zip
+          # draft: false
+          # prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
