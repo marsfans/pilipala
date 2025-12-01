@@ -1,4 +1,4 @@
-name: accord build & release
+name: Gramophone build & release
 
 on:
   workflow_dispatch:
@@ -21,39 +21,36 @@ jobs:
 
       - uses: actions/checkout@v4
         with:
-          repository: FoedusProgramme/Accord
+          repository: FoedusProgramme/Gramophone
           fetch-depth: 0
           submodules: true
+          ref: beta
 
-      - name: Set up JDK 17
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
+          cache: gradle
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-      - name: Setup wrapper
-        uses: gradle/actions/wrapper-validation@v3
+      #- name: Setup Gradle
+       # uses: gradle/actions/setup-gradle@v4
+      
 
       - name: Set release type
         run: |
           echo releaseType=CI > package.properties
-          # git submodule update --remote --recursive
-          rm -rf media3
-          git clone https://github.com/androidx/media.git
-          mv media media3 
-
+          
       - name: Build with Gradle
         run: |
           echo ${{ secrets.MYAPP_KEYSTORE_BASE64 }} | base64 --decode > app/${{ secrets.MYAPP_UPLOAD_STORE_FILE }}
           chmod +x ./gradlew
-          ./gradlew assembleRelease -PMYAPP_UPLOAD_STORE_FILE='${{ secrets.MYAPP_UPLOAD_STORE_FILE }}' -PMYAPP_UPLOAD_KEY_ALIAS='${{ secrets.MYAPP_UPLOAD_KEY_ALIAS }}' -PMYAPP_UPLOAD_STORE_PASSWORD='${{ secrets.MYAPP_UPLOAD_STORE_PASSWORD }}' -PMYAPP_UPLOAD_KEY_PASSWORD='${{ secrets.MYAPP_UPLOAD_KEY_PASSWORD }}'
+          ./gradlew bundleRelease -PMYAPP_UPLOAD_STORE_FILE='${{ secrets.MYAPP_UPLOAD_STORE_FILE }}' -PMYAPP_UPLOAD_KEY_ALIAS='${{ secrets.MYAPP_UPLOAD_KEY_ALIAS }}' -PMYAPP_UPLOAD_STORE_PASSWORD='${{ secrets.MYAPP_UPLOAD_STORE_PASSWORD }}' -PMYAPP_UPLOAD_KEY_PASSWORD='${{ secrets.MYAPP_UPLOAD_KEY_PASSWORD }}'
           rm -f app/${{ secrets.MYAPP_UPLOAD_STORE_FILE }}
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v5.0.0
         with:
           # Artifact name
-          name: "accord-android-${{ github.event.inputs.tags }}"
+          name: "Gramophone-android-${{ github.event.inputs.tags }}"
           # A file, directory or wildcard pattern that describes what to upload
           path: app/build/outputs/apk/release/*
