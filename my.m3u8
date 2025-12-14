@@ -1,0 +1,19 @@
+#EXTM3U
+#EXTINF:-1 group-title="央广电台" tvg-logo="https://cnvod.cnr.cn/audio2017/ondemand/media/1100/20210425/1619317448858.jpg",CNR中国之声
+https://ngcdn001.cnr.cn/live/zgzs/index.m3u8
+#EXTINF:-1 group-title="央广电台" tvg-logo="https://cnvod.cnr.cn/audio2017/ondemand/img/1100/20230315/1678868245687.png",CNR经济之声
+https://ngcdn001.cnr.cn/live/jjzs/index.m3u8
+#EXTINF:-1 group-title="央广电台" tvg-logo="https://cnvod.cnr.cn/audio2017/ondemand/img/1100/20191224/1577155745280.png",CNR音乐之声
+https://ngcdn001.cnr.cn/live/yyzs/index.m3u8
+#EXTINF:-1 group-title="央广电台" tvg-logo="https://cnvod.cnr.cn/audio2017/ondemand/img/1100/20200108/1578449381052.png",CNR经典音乐广播
+https://ngcdn001.cnr.cn/live/dszs/index.m3u8
+#EXTINF:-1 group-title="央广电台" tvg-logo="https://cnvod.cnr.cn/audio2017/ondemand/img/1100/20230612/1686554758307.png",CNR台海之声
+https://ngcdn001.cnr.cn/live/zhzs/index.m3u8
+#EXTINF:-1 group-title="央广电台" tvg-logo="https://cnvod.cnr.cn/audio2017/ondemand/img/1100/20230612/1686554715652.png",CNR神州之声
+https://ngcdn001.cnr.cn/live/szzs/index.m3u8
+#EXTINF:-1 group-title="央广电台" tvg-logo="https://cnvod.cnr.cn/audio2017/ondemand/img/1100/20230612/1686554680065.png",CNR大湾区之声
+https://ngcdn001.cnr.cn/live/hxzs/index.m3u8
+#EXTINF:-1 group-title="央广电台" tvg-logo="https://cnvod.cnr.cn/audio2017/ondemand/img/1100/20200306/1583464064428.jpg",环球资讯
+https://sk.cri.cn/905.m3u8
+#EXTINF:-1 group-title="央广电台" tvg-logo="https://cnvod.cnr.cn/audio2017/ondemand/img/1100/20191227/1577439531060.png",HIT FM
+https://sk.cri.cn/887.m3u8
