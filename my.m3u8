@@ -1,4 +1,6 @@
 #EXTM3U
+#EXTGRP:央广电台
+
 #EXTINF:-1 group-title="央广电台" tvg-logo="https://cnvod.cnr.cn/audio2017/ondemand/media/1100/20210425/1619317448858.jpg",CNR中国之声
 https://ngcdn001.cnr.cn/live/zgzs/index.m3u8
 #EXTINF:-1 group-title="央广电台" tvg-logo="https://cnvod.cnr.cn/audio2017/ondemand/img/1100/20230315/1678868245687.png",CNR经济之声
@@ -17,3 +19,23 @@ https://ngcdn001.cnr.cn/live/hxzs/index.m3u8
 https://sk.cri.cn/905.m3u8
 #EXTINF:-1 group-title="央广电台" tvg-logo="https://cnvod.cnr.cn/audio2017/ondemand/img/1100/20191227/1577439531060.png",HIT FM
 https://sk.cri.cn/887.m3u8
+
+#EXTGRP:央广电视
+#EXTINF:-1 group-title="央广电视" tvg-logo="",CCTV1
+https://ldncctvwbcdbd.a.bdydns.com/ldncctvwbcd/cdrmldcctv1_1/index.m3u8?BR=td
+#EXTINF:-1 group-title="央广电视" tvg-logo="",CCTV2
+https://ldocctvwbcdbd.a.bdydns.com/ldocctvwbcd/cdrmldcctv2_1/index.m3u8?BR=td
+#EXTINF:-1 group-title="央广电视" tvg-logo="",CCTV3
+https://ldocctvwbcdbd.a.bdydns.com/ldocctvwbcd/cdrmldcctv3_1/index.m3u8?BR=td
+#EXTINF:-1 group-title="央广电视" tvg-logo="",CCTV4
+https://ldocctvwbcdbd.a.bdydns.com/ldocctvwbcd/cdrmldcctv4_1/index.m3u8?BR=td
+#EXTINF:-1 group-title="央广电视" tvg-logo="",CCTV5
+https://ldocctvwbcdbd.a.bdydns.com/ldocctvwbcd/cdrmldcctv5_1/index.m3u8?BR=td
+#EXTINF:-1 group-title="央广电视" tvg-logo="",CCTV6
+https://ldocctvwbcdbd.a.bdydns.com/ldocctvwbcd/cdrmldcctv6_1/index.m3u8?BR=td
+#EXTINF:-1 group-title="央广电视" tvg-logo="",CCTV7
+https://ldocctvwbcdbd.a.bdydns.com/ldocctvwbcd/cdrmldcctv7_1/index.m3u8?BR=td
+#EXTINF:-1 group-title="央广电视" tvg-logo="",CCTV8
+https://ldocctvwbcdbd.a.bdydns.com/ldocctvwbcd/cdrmldcctv8_1/index.m3u8?BR=td
+#EXTINF:-1 group-title="央广电视" tvg-logo="",CCTV9
+https://ldocctvwbcdbd.a.bdydns.com/ldocctvwbcd/cdrmldcctv9_1/index.m3u8?BR=td
