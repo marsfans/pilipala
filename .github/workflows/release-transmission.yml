@@ -7,6 +7,7 @@ on:
         description: "Release version (e.g. 4.0.6)"
         required: true
         type: string
+        default: '4.0.6'
 
 jobs:
   build:
