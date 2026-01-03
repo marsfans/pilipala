@@ -22,6 +22,11 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
+        with:
+          repository: transmission/transmission
+          ref: v${{ needs.build.outputs.version }}
+          submodules: recursive
+          fetch-depth: 0
 
       - name: Determine version
         id: version
