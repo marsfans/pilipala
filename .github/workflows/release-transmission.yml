@@ -73,7 +73,7 @@ jobs:
             -DENABLE_CLI=ON \
             -DENABLE_DAEMON=ON \
             -DENABLE_GTK=${{ runner.os == 'Linux' && 'ON' || 'OFF' }} \
-            -DENABLE_QT=ON
+            -DENABLE_QT=${{ runner.os == 'Windows' && 'ON' || 'OFF' }}
 
       - name: Build
         run: cmake --build build --parallel
