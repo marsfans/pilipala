@@ -91,7 +91,7 @@ jobs:
       - name: Package
         shell: bash
         run: |
-          # mkdir dist
+          mkdir dist1
           cp build/daemon/transmission-daemon* dist/ || true
           cp build/cli/transmission-cli* dist/ || true
           cp -r build/gtk dist/ || true
