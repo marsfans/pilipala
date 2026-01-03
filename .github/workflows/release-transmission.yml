@@ -78,10 +78,14 @@ jobs:
 
       - name: Build
         run: |
-          if: runner.os == 'macOS'
+          if [[ "$RUNNER_OS" == "macOS" ]]; then
             ninja -C build transmission-mac
-          else:
+          else
             cmake --build build --parallel
+          fi
+        env:
+          RUNNER_OS: ${{ runner.os }}
+
 
       # -------- Package --------
       - name: Package
