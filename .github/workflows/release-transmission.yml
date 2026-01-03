@@ -57,11 +57,12 @@ jobs:
 
       - name: Install deps (Windows)
         if: runner.os == 'Windows'
-        uses: lukka/run-vcpkg@v11
-        with:
-          vcpkgArguments: >
-            curl zlib openssl qt5-tools qt5-winextras
-          vcpkgDirectory: ${{ github.workspace }}/vcpkg
+        # uses: lukka/run-vcpkg@v11
+        # with:
+        #   vcpkgArguments: >
+        #     curl zlib openssl qt5-tools qt5-winextras
+        #   vcpkgDirectory: ${{ github.workspace }}/vcpkg
+        run: vcpkg install curl zlib openssl qt5-tools qt5-winextras
 
       # -------- Build --------
       - name: Configure
