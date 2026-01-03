@@ -1,0 +1,118 @@
+name: Build & Release Transmission
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (e.g. 4.0.6)"
+        required: true
+        type: string
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Determine version
+        id: version
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+          fi
+
+      # -------- Dependencies --------
+      - name: Install deps (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            build-essential cmake ninja pkg-config \
+            libcurl4-openssl-dev libssl-dev libevent-dev \
+            libgtk-3-dev qtbase5-dev qttools5-dev qttools5-dev-tools
+
+      - name: Install deps (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew update
+          brew install cmake ninja curl openssl libevent qt
+
+      - name: Install deps (Windows)
+        if: runner.os == 'Windows'
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgArguments: >
+            curl openssl libevent qt5-base
+          vcpkgDirectory: ${{ github.workspace }}/vcpkg
+
+      # -------- Build --------
+      - name: Configure
+        run: |
+          cmake -S . -B build \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DENABLE_CLI=ON \
+            -DENABLE_DAEMON=ON \
+            -DENABLE_GTK=${{ runner.os == 'Linux' && 'ON' || 'OFF' }} \
+            -DENABLE_QT=ON
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      # -------- Package --------
+      - name: Package
+        shell: bash
+        run: |
+          mkdir dist
+          cp build/daemon/transmission-daemon* dist/ || true
+          cp build/cli/transmission-cli* dist/ || true
+          cp -r build/gtk dist/ || true
+          cp -r build/qt dist/ || true
+
+          tar -czf transmission-${{ steps.version.outputs.version }}-${{ runner.os }}.tar.gz dist
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: transmission-${{ runner.os }}
+          path: transmission-${{ steps.version.outputs.version }}-${{ runner.os }}.tar.gz
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.build.outputs.version }}
+          name: Transmission v${{ needs.build.outputs.version }}
+          body: |
+            Automated build of Transmission
+            Version: ${{ needs.build.outputs.version }}
+
+            Included:
+            - CLI
+            - Daemon
+            - GTK (Linux)
+            - Qt (All platforms)
+          files: |
+            **/*.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
