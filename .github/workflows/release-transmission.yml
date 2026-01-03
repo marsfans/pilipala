@@ -39,22 +39,22 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y \
-            build-essential cmake ninja pkg-config \
+            build-essential automake autoconf libtool pkg-config intltool \
             libcurl4-openssl-dev libssl-dev libevent-dev \
-            libgtk-3-dev qtbase5-dev qttools5-dev qttools5-dev-tools
+            libgtk-3-dev qtbase5-dev qttools5-dev qttools5-dev-tools libappindicator3-dev
 
       - name: Install deps (macOS)
         if: runner.os == 'macOS'
         run: |
           brew update
-          brew install cmake ninja curl openssl libevent qt
+          brew install cmake ninja curl openssl libevent qt gtk4 gtkmm4
 
       - name: Install deps (Windows)
         if: runner.os == 'Windows'
         uses: lukka/run-vcpkg@v11
         with:
           vcpkgArguments: >
-            curl openssl libevent qt5-base
+            curl zlib openssl qt5-tools qt5-winextras
           vcpkgDirectory: ${{ github.workspace }}/vcpkg
 
       # -------- Build --------
