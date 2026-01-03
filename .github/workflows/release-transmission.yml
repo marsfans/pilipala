@@ -77,7 +77,11 @@ jobs:
             -DENABLE_QT=${{ runner.os == 'Windows' && 'ON' || 'OFF' }}
 
       - name: Build
-        run: cmake --build build --parallel
+        run: |
+          if: runner.os == 'macOS'
+            ninja -C build transmission-mac
+          else:
+            cmake --build build --parallel
 
       # -------- Package --------
       - name: Package
