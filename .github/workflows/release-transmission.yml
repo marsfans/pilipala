@@ -100,7 +100,7 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ needs.build.outputs.version }}
+          tag_name: Transmission v${{ needs.build.outputs.version }}
           name: Transmission v${{ needs.build.outputs.version }}
           body: |
             Automated build of Transmission
