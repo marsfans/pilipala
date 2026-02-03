@@ -1,0 +1,131 @@
+name: 🚀 Build ffmpreg for all platforms
+
+# ① 手动触发（可带输入参数）
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Git ref to build (branch/tag/sha)'
+        required: false
+        default: ''          # 空表示当前 HEAD
+      version:
+        description: 'Semantic version to embed (optional)'
+        required: false
+        default: ''          # 如果想把版本号写进二进制
+
+# ② 采用一体化的矩阵，支持多平台
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ubuntu-latest
+
+    # Docker 镜像中自带 cross + Rust
+    container:
+      image: bellsoft/liberica-openjdk-alpine:17   # 仅示例；实际请换为 cross 镜像
+      options: >-
+        --privileged
+        --init
+
+    strategy:
+      matrix:
+        target:
+          - x86_64-unknown-linux-gnu
+          - x86_64-unknown-linux-musl
+          - x86_64-unknown-windows-gnu
+          - aarch64-unknown-linux-gnu
+          - aarch64-unknown-linux-musl
+          - x86_64-apple-darwin   # 仅在 macos‑host（下面单独 runner）
+          # 若想加 macOS，改为 macos‑latest Runner 下面的 job
+
+    # 步骤
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          repository: 'yazaldefilimone/ffmpreg'
+      - name: Cache Cargo registry & index
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Install Rust (toolchain)
+        uses: actions/setup-rust@v2
+        with:
+          rust-toolchain: stable          # 或 nightly 视需
+          target: ${{ matrix.target }}   # 只在这个 runner 里增加目标
+
+      - name: Install cross (only for ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          cargo install cross --locked --git https://github.com/cross-rs/cross.git
+
+      - name: Build for target
+        run: |
+          # ① 把版本号写进 env，Cargo 不会自动识别
+          export RUSTFLAGS="-C link-arg=-s"   # Strip binary
+          # 取传进来的版本，或者用 commit
+          VERSION=${{ github.event.inputs.version || github.sha }}
+          echo "Building ${{ matrix.target }} (ver=$VERSION)" 1>&2
+
+          # windows 需要 mingw linker
+          if [ "${{ matrix.target }}" = "x86_64-unknown-windows-gnu" ]; then
+            # 在 ubuntu 上装链接器
+            apt-get update && apt-get install -y mingw-w64
+          fi
+
+          # actual build
+          if [ "${{ runner.os }}" = "Linux" ]; then
+            # 对于 linux「Material」目标：直接 cargo build
+            cargo build --release --target ${{ matrix.target }}
+          elif [ "${{ runner.os }}" = "macOS" ]; then
+            # macOS 下不要安装 cross，直接 cargo
+            cargo build --release --target ${{ matrix.target }}
+          else
+            # 其他：使用 cross
+            cross build --release --target ${{ matrix.target }}
+          fi
+
+      - name: Archive artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffmpreg-${{ matrix.target }}
+          path: |
+            target/${{ matrix.target }}/release/ffmpreg*
+          retention-days: 14
+
+  # ---------- Optional: 发布 tag
+  release:
+    if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' }}
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Zip up
+        run: |
+          mkdir release
+          for target in $(ls ffmpreg-*); do
+            mv "$target" "release/${target}"
+          done
+          zip -r release.zip release
+
+      - name: Create new Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.version || 'auto-' + github.sha }}
+          name: Release ${{ github.event.inputs.version || github.sha }}
+          files: release.zip
+          fail_on_unmatched_files: false
+          draft: false
+          prerelease: false
