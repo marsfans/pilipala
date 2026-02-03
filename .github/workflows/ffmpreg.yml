@@ -3,17 +3,10 @@ on:
   # ① 通过 Web UI 手动触发
   workflow_dispatch:
     inputs:
-      ref:
-        description: >-
-          Git ref to checkout. Accepts branch, tag or full commit SHA.
-          E.g. main / v1.0.0 / 3a2c9e1
+      tags:
+        description: '指定 torrent 版本号（如 v1.2.3 或 latest）'
         required: true
-        default: main
-  # ② 当你所有 push / PR / tag 时也会跑一次
-  push:
-    branches: ['main', 'release/**']
-  pull_request:
-    branches: ['main', 'release/**']
+        default: '1.0.0'
 
 jobs:
   build:
@@ -124,3 +117,4 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           files: artifacts/${{ env.PROJECT_BIN }}
+
