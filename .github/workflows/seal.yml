@@ -17,7 +17,7 @@ jobs:
       repository: Dear-moon/Seal
       # fetch-depth: 0
       # submodules: true
-      ref: test
+      # ref: test
 
     - name: set up JDK 21
       uses: actions/setup-java@v4
