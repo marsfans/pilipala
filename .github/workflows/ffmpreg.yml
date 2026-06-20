@@ -98,6 +98,7 @@ jobs:
       - name: Prepare artifact
         run: |
           mkdir -p artifacts
+          ls
           tree target/
           cp target/${{ matrix.target }}/release/${{ env.PROJECT_BIN }} artifacts/
         env:
