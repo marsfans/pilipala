@@ -94,7 +94,7 @@ jobs:
       - name: Prepare artifact
         run: |
           mkdir -p artifacts
-          ls target/${{ matrix.target }}/release/
+          tree target/${{ matrix.target }}/release/
           cp target/${{ matrix.target }}/release/${{ env.PROJECT_BIN }} artifacts/
         env:
           # 如果你的二进制名不是 Cargo package name，手动修改
@@ -102,7 +102,16 @@ jobs:
           # Windows 需要 .exe
           # PROJECT_BIN: ffmpreg.exe
         shell: bash
-
+        
+      # 只有当 target 是 macos 时才执行 brew install tree
+      - name: Install tree on macOS
+        if: matrix.os == 'macos-latest'
+        run: brew install tree
+        
+      # - name: Install tree on Linux
+      #   if: matrix.target != 'macos-latest'
+      #   run: sudo apt-get install -y tree
+        
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
