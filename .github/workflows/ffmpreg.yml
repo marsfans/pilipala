@@ -105,7 +105,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ffmpreg-${{ matrix.target }}
+          name: ffmpreg-${{ matrix.target }}-v${{ github.event.inputs.tags }}
           path: artifacts/${{ env.PROJECT_BIN }}
 
       # ----------------------------------------------------------------
@@ -115,7 +115,7 @@ jobs:
         name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
+          tag_name: "${{ github.ref_name }}-v${{ github.event.inputs.tags }}"
           files: artifacts/${{ env.PROJECT_BIN }}
 
 
