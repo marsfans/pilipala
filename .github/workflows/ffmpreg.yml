@@ -1,4 +1,4 @@
-name: Rust multi‑platform CI
+name: Rust ffmpreg CI
 on:
   # ① 通过 Web UI 手动触发
   workflow_dispatch:
