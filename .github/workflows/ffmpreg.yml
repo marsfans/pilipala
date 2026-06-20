@@ -87,14 +87,18 @@ jobs:
       # ----------------------------------------------------------------
       - name: Build release
         run: cargo build --release --target ${{ matrix.target }}
-
+      
+      # 只有当 target 是 macos 时才执行 brew install tree
+      - name: Install tree on macOS
+        if: matrix.os == 'macos-latest'
+        run: brew install tree
       # ----------------------------------------------------------------
       # 5️⃣ 6. Collect artifacts
       # ----------------------------------------------------------------
       - name: Prepare artifact
         run: |
           mkdir -p artifacts
-          tree target/${{ matrix.target }}/release/
+          tree target/
           cp target/${{ matrix.target }}/release/${{ env.PROJECT_BIN }} artifacts/
         env:
           # 如果你的二进制名不是 Cargo package name，手动修改
@@ -102,11 +106,6 @@ jobs:
           # Windows 需要 .exe
           # PROJECT_BIN: ffmpreg.exe
         shell: bash
-        
-      # 只有当 target 是 macos 时才执行 brew install tree
-      - name: Install tree on macOS
-        if: matrix.os == 'macos-latest'
-        run: brew install tree
         
       # - name: Install tree on Linux
       #   if: matrix.target != 'macos-latest'
