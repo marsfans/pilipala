@@ -28,7 +28,7 @@ jobs:
           xcodebuild -list
           xcodebuild \
           -project "FlareDNS.xcodeproj" \
-          -scheme "FlareDNS-iOS" \
+          -scheme "FlareDNS" \
           -configuration ${{ github.event.inputs.build_type }} \
           -sdk iphoneos \
           CODE_SIGNING_ALLOWED=NO \
