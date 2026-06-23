@@ -1,12 +1,17 @@
 name: Build FlareDNS
 
 on:
-  workflow_dispatch:                # 手动触发
+  workflow_dispatch:
+  # 手动触发
     inputs:
       build_type:
         description: "构建类型"
         required: true
         default: "Release"
+      tags:
+        description: '指定 FlareDNS 版本号（如 v1.0.0 或 latest）'
+        required: true
+        default: '1.0.0'
 
 jobs:
 
@@ -39,10 +44,20 @@ jobs:
           -archivePath build/ios/FlareDNS.xcarchive
       - name: Export app and zip
         run: |
-          mkdir -p output/ios
-          cp -R build/ios/FlareDNS.xcarchive/Products/Applications/*.app output/ios/
-          cd output/ios && zip -r FlareDNS_iOS.zip *.app
+          mkdir -p Payload
+          cp -r build/ios/FlareDNS.xcarchive/Products/Applications/*.app Payload
+          zip -r "FlareDNS-${{ github.event.inputs.tags }}.ipa" Payload/
       - uses: actions/upload-artifact@v4
         with:
-          name: AngelLive-iOS
-          path: output/ios/*.zip
+          name: FlareDNS-${{ github.event.inputs.tags }}
+          path: "FlareDNS-${{ github.event.inputs.tags }}.ipa"
+      - name: 创建 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "FlareDNS-${{ github.event.inputs.tags }}"
+          name: "FlareDNS-${{ github.event.inputs.tags }}"
+          files: *.ipa
+          # draft: false
+          # prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
