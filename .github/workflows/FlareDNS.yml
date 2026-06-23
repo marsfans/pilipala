@@ -25,6 +25,7 @@ jobs:
 
       - name: Build iOS target
         run: |
+          xcodebuild -list
           xcodebuild \
           -project "FlareDNS.xcodeproj" \
           -scheme "FlareDNS-iOS" \
