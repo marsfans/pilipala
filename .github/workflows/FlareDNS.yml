@@ -26,16 +26,16 @@ jobs:
       - name: Build iOS target
         run: |
           xcodebuild \
-          -workspace "FlareDNS.xcworkspace" \
-            -scheme "FlareDNS-iOS" \
-            -configuration ${{ github.event.inputs.build_type }} \
-            -sdk iphoneos \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGN_IDENTITY="" \
-            PROVISIONING_PROFILE_SPECIFIER="" \
-            SKIP_INSTALL=NO \
-            archive \
-            -archivePath build/ios/FlareDNS.xcarchive
+          -project "FlareDNS.xcodeproj" \
+          -scheme "FlareDNS-iOS" \
+          -configuration ${{ github.event.inputs.build_type }} \
+          -sdk iphoneos \
+          CODE_SIGNING_ALLOWED=NO \
+          CODE_SIGN_IDENTITY="" \
+          PROVISIONING_PROFILE_SPECIFIER="" \
+          SKIP_INSTALL=NO \
+          archive \
+          -archivePath build/ios/FlareDNS.xcarchive
       - name: Export app and zip
         run: |
           mkdir -p output/ios
