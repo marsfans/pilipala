@@ -56,7 +56,7 @@ jobs:
         with:
           tag_name: "FlareDNS-${{ github.event.inputs.tags }}"
           name: "FlareDNS-${{ github.event.inputs.tags }}"
-          files: *.ipa
+          files: "FlareDNS-${{ github.event.inputs.tags }}.ipa"
           # draft: false
           # prerelease: false
         env:
