@@ -38,13 +38,14 @@ jobs:
           xcodebuild \
             -workspace Leplayer.xcworkspace \
             -scheme Leplayer \
-            -configuration Release \                     # 你想要的构建配置
-            -sdk appletvos \                             # tvOS SDK
-            -allowProvisioningUpdates \                   # 让 Xcode 自动找/生成证书（可选）
-            CODE_SIGNING_ALLOWED=NO \                    # 彻底关闭签名
-            CODE_SIGN_IDENTITY="" \                       # 空格，防止 Xcode 生成
-            PROVISIONING_PROFILE_SPECIFIER="" \           # 空格，防止 Xcode 生成
-            SKIP_INSTALL=NO \                            # 必须，生成 .xcarchive
+            -configuration Release \
+            -sdk appletvos \
+            -allowProvisioningUpdates \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            SKIP_INSTALL=NO \
             archive \
             -archivePath build/tvos/Leplayer.xcarchive
       - name: Export app and zip
