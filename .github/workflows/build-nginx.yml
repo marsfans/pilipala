@@ -24,23 +24,34 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    
     env:
       # ③ 统一放在 env 里，方便后面引用
       OPENSSL_VER: ${{ github.event.inputs.openssl_version || '3.0.10' }}
       PCRE_VER:      ${{ github.event.inputs.pcre_version      || '8.45' }}
       ZLIB_VER:     ${{ github.event.inputs.zlib_version     || '1.3.1' }}
       NGINX_VER:    ${{ github.event.inputs.nginx_version    || '1.27.1' }}
-      ARTIFACT_NAME: nginx-static-${{ github.event.inputs.nginx_version || '1.27.1' }}.tar.gz
+      ARTIFACT_NAME: nginx-static-${{ matrix.os }}-${{ runner.arch }}-${{ github.event.inputs.nginx_version || '1.27.1' }}.tar.gz
     steps:
       # ④ 代码拉取
       - uses: actions/checkout@v4
 
-      # ⑤ 安装 gcc、make、wget 等
-      - name: Install build tools
+      # ──────────────────────────────────────────────────────────────────────
+      # 6️⃣  Install build tools – Ubuntu uses apt, macOS uses brew
+      - name: Install build tools (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update -y
           sudo apt-get install -y build-essential wget git ca-certificates
+
+      - name: Install build tools (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install wget git ca-certificates
 
       # ⑥ Cache OpenSSL build (to speed up)
       - name: Cache OpenSSL
