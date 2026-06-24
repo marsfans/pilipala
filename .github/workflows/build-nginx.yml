@@ -145,10 +145,10 @@ jobs:
             --with-ld-opt="-static -Wl,-Bstatic -L$HOME/openssl/lib -L$HOME/pcre/lib -L$HOME/zlib/lib -ldl -lpthread -lssl -lcrypto -lz" \
             --with-http_v3_module \
             --with-http_ssl_module \
-            --with-http_gzip_static_module \
-            --with-pcre2 \
-            --with-pcre2-jit \
-            --with-openssl=$HOME/openssl
+            --with-http_gzip_static_module
+            # --with-pcre2 \
+            # --with-pcre2-jit \
+            # --with-openssl=$HOME/openssl
           make -j$(nproc)
           make install
 
