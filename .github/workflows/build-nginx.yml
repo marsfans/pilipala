@@ -138,6 +138,39 @@ jobs:
 
       # ⑬ 下载并编译 Nginx（静态，HTTP/3）
       - name: Build Nginx static with HTTP/3
+        if: matrix.os == 'macos-latest'
+        run: |
+          mkdir -p ~/nginx
+          cd ~/nginx
+          if [ ! -f "nginx-${NGINX_VER}.tar.gz" ]; then
+            wget https://nginx.org/download/nginx-${NGINX_VER}.tar.gz
+          fi
+          tar xzf nginx-${NGINX_VER}.tar.gz
+          cd nginx-${NGINX_VER}
+          ./configure \
+            --prefix=/opt/nginx \
+            --sbin-path=/opt/nginx/nginx \
+            --modules-path=/opt/nginx/modules \
+            --conf-path=/opt/nginx/nginx.conf \
+            --error-log-path=/opt/nginx/log/error.log \
+            --http-log-path=/opt/nginx/log/access.log \
+            --pid-path=/opt/nginx/run/nginx.pid \
+            --lock-path=/opt/nginx/run/nginx.lock \
+            --with-cc-opt="-static -O2 -march=native \
+                     -I$HOME/openssl/include -I$HOME/pcre/include -I$HOME/zlib/include" \
+            --with-ld-opt="-L$HOME/openssl/lib -L$HOME/pcre/lib -L$HOME/zlib/lib \
+                     -lssl -lcrypto -lz -ldl -lpthread" \
+            --with-http_v3_module \
+            --with-http_ssl_module \
+            --with-http_gzip_static_module
+            # --with-pcre2 \
+            # --with-pcre2-jit \
+            # --with-openssl=$HOME/openssl
+          make -j$(nproc)
+          make install
+        # ⑬ 下载并编译 Nginx（静态，HTTP/3）
+      - name: Build Nginx static with HTTP/3
+        if: matrix.os == 'ubuntu-latest'
         run: |
           mkdir -p ~/nginx
           cd ~/nginx
