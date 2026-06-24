@@ -88,9 +88,7 @@ jobs:
           # 进入源码目录
           mkdir -p ~/nginx
           cd ~/nginx
-          if [ ! -f "nginx-${NGINX_VER}.tar.gz" ]; then
-            wget https://nginx.org/download/nginx-${NGINX_VER}.tar.gz
-          fi
+          curl -L -O https://nginx.org/download/nginx-${NGINX_VER}.tar.gz
           tar xzf nginx-${NGINX_VER}.tar.gz
           cd nginx-${NGINX_VER}
 
