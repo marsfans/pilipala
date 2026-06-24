@@ -23,10 +23,131 @@ on:
         default: '1.31.2'
 
 jobs:
-  build:
+  build-windows:
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [windows-latest]
+        arch: [x86_64, arm64]
+        # exclude:                  # <‑‑ 过滤掉不合法组合
+        #   - os: macos-latest
+        #     arch: x86_64           # macOS 只能跑 arm64
+    runs-on: ${{ matrix.os }}
+    env:
+      # ③ 统一放在 env 里，方便后面引用
+      OPENSSL_VER: ${{ github.event.inputs.openssl_version || '3.0.10' }}
+      PCRE_VER:      ${{ github.event.inputs.pcre_version      || '8.45' }}
+      ZLIB_VER:     ${{ github.event.inputs.zlib_version     || '1.3.1' }}
+      NGINX_VER:    ${{ github.event.inputs.nginx_version    || '1.27.1' }}
+      ARTIFACT_NAME: nginx-static-${{ matrix.os }}-${{ matrix.arch }}-${{ github.event.inputs.nginx_version || '1.27.1' }}.zip
+    steps:
+      # ------------------------------------------------------------------
+      # 0️⃣  检出代码
+      # ------------------------------------------------------------------
+      - uses: actions/checkout@v4
+
+      # ------------------------------------------------------------------
+      # 1️⃣  安装 Visual Studio Build Tools (MSVC)
+      # ------------------------------------------------------------------
+      - name: Install MSBuild
+        uses: microsoft/setup-msbuild@v1.1
+        with:
+          vs-version: '17.8'   # 默认最新版本
+
+      # ------------------------------------------------------------------
+      # 2️⃣  安装 vcpkg 并集成到 MSBuild
+      # ------------------------------------------------------------------
+      - name: Install vcpkg
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git
+          .\vcpkg\bootstrap-vcpkg.bat
+          .\vcpkg\vcpkg integrate install
+
+      # ------------------------------------------------------------------
+      # 3️⃣  用 vcpkg 安装静态 OpenSSL / PCRE2 / zlib
+      # ------------------------------------------------------------------
+      - name: Install dependencies via vcpkg
+        run: |
+          .\vcpkg\vcpkg install openssl:x64-windows-static
+          .\vcpkg\vcpkg install pcre2:x64-windows-static
+          .\vcpkg\vcpkg install zlib:x64-windows-static
+
+      # ------------------------------------------------------------------
+      # 4️⃣  配置 Nginx
+      # ------------------------------------------------------------------
+      # 这里用 PowerShell 语法，注意路径写成 Windows 风格
+      - name: Configure Nginx
+        run: |
+          $OpenSSLDir = ".\vcpkg\installed\x64-windows-static"
+          $PcreDir    = ".\vcpkg\installed\x64-windows-static"
+          $ZlibDir    = ".\vcpkg\installed\x64-windows-static"
+
+          # 先下载 Nginx 源码（如果你已经在 repo 里可以省略）
+          # 这里假设你在 repo 根目录放了 nginx-${{ env.NGINX_VER }}.tar.gz
+          # 你也可以直接 `git clone` 官方仓库
+
+          # 进入源码目录
+          cd .\nginx-${{ env.NGINX_VER }}
+
+          # 运行 configure
+          ./configure `
+            --prefix=C:\nginx `
+            --sbin-path=C:\nginx\nginx.exe `
+            --modules-path=C:\nginx\modules `
+            --conf-path=C:\nginx\nginx.conf `
+            --error-log-path=C:\nginx\logs\error.log `
+            --http-log-path=C:\nginx\logs\access.log `
+            --pid-path=C:\nginx\run\nginx.pid `
+            --lock-path=C:\nginx\run\nginx.lock `
+            --with-cc-opt="/MT /O2 -I$OpenSSLDir\include -I$PcreDir\include -I$ZlibDir\include" `
+            --with-ld-opt="/LIBPATH:$OpenSSLDir\lib /LIBPATH:$PcreDir\lib /LIBPATH:$ZlibDir\lib /lssl /lcrypto /lpcre2-8 /lz /lws2_32 /luserenv /lkernel32 /luser32 /lshlwapi" `
+            --with-http_v3_module `
+            --with-http_ssl_module `
+            --with-http_gzip_static_module
+            # --with-pcre2 `
+            # --with-pcre2-jit `
+            # --with-openssl=$OpenSSLDir
+
+      # ------------------------------------------------------------------
+      # 5️⃣  编译 Nginx
+      # ------------------------------------------------------------------
+      - name: Build Nginx
+        run: |
+          # Nginx 的 Makefile 里用的是 nmake
+          nmake -f Makefile
+
+      # ------------------------------------------------------------------
+      # 6️⃣  打包
+      # ------------------------------------------------------------------
+      - name: Package
+        run: |
+          # 把整个安装目录压成 zip
+          Compress-Archive -Path C:\nginx\* -DestinationPath ${{ env.ARTIFACT_NAME }}
+      # ──────────────────────────────────────────────────────────────────────
+      # ⑭ 上传到 GitHub Release
+      - name: Create Release and upload asset
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: nginx-${{ env.NGINX_VER }}
+          name: Nginx ${{ env.NGINX_VER }} (static, HTTP/3)
+          body: |
+            **OpenSSL**: ${{ env.OPENSSL_VER }}  
+            **PCRE**: ${{ env.PCRE_VER }}  
+            **zlib**: ${{ env.ZLIB_VER }}  
+            **Nginx**: ${{ env.NGINX_VER }}
+          files: ${{ env.ARTIFACT_NAME }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ⑰ (可选) 验证编译结果
+      - name: Verify build
+        run: |
+          C:\nginx\nginx.exe -V
+          # 下面的 curl 需要 curl 7.80+，可在后续 job 中安装
+          # curl -I --http3 https://example.com
+  build-linux:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
         arch: [x86_64, arm64]
         # exclude:                  # <‑‑ 过滤掉不合法组合
         #   - os: macos-latest
