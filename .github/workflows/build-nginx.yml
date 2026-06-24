@@ -1,0 +1,186 @@
+name: Build Nginx (HTTP/3) – static binary
+
+# ① 触发方式
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # ② 手动触发（可自行传入版本）
+  workflow_dispatch:
+    inputs:
+      openssl_version:
+        description: 'OpenSSL version (e.g. 3.0.10)'
+        required: false
+        default: '3.0.10'
+      pcre_version:
+        description: 'PCRE version (e.g. 8.45)'
+        required: false
+        default: '8.45'
+      zlib_version:
+        description: 'zlib version (e.g. 1.3.1)'
+        required: false
+        default: '1.3.1'
+      nginx_version:
+        description: 'Nginx version (e.g. 1.27.1)'
+        required: false
+        default: '1.27.1'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      # ③ 统一放在 env 里，方便后面引用
+      OPENSSL_VER: ${{ github.event.inputs.openssl_version || '3.0.10' }}
+      PCRE_VER:      ${{ github.event.inputs.pcre_version      || '8.45' }}
+      ZLIB_VER:     ${{ github.event.inputs.zlib_version     || '1.3.1' }}
+      NGINX_VER:    ${{ github.event.inputs.nginx_version    || '1.27.1' }}
+
+    steps:
+      # ④ 代码拉取
+      - uses: actions/checkout@v4
+
+      # ⑤ 安装 gcc、make、wget 等
+      - name: Install build tools
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y build-essential wget git ca-certificates
+
+      # ⑥ Cache OpenSSL build (to speed up)
+      - name: Cache OpenSSL
+        uses: actions/cache@v4
+        with:
+          path: ~/openssl
+          key: openssl-${{ env.OPENSSL_VER }}-${{ runner.os }}
+          restore-keys: openssl-${{ env.OPENSSL_VER }}-${{ runner.os }}
+
+      # ⑦ 编译 OpenSSL（静态）
+      - name: Build OpenSSL static
+        run: |
+          mkdir -p ~/openssl
+          cd ~/openssl
+          if [ ! -f "openssl-${OPENSSL_VER}.tar.gz" ]; then
+            wget https://www.openssl.org/source/openssl-${OPENSSL_VER}.tar.gz
+          fi
+          tar xzf openssl-${OPENSSL_VER}.tar.gz
+          cd openssl-${OPENSSL_VER}
+          ./Configure --prefix=$HOME/openssl no-shared
+          make -j$(nproc)
+          make install_sw
+
+      # ⑧ Cache PCRE
+      - name: Cache PCRE
+        uses: actions/cache@v4
+        with:
+          path: ~/pcre
+          key: pcre-${{ env.PCRE_VER }}-${{ runner.os }}
+          restore-keys: pcre-${{ env.PCRE_VER }}-${{ runner.os }}
+
+      # ⑨ 编译 PCRE（静态）
+      - name: Build PCRE static
+        run: |
+          mkdir -p ~/pcre
+          cd ~/pcre
+          if [ ! -f "pcre-${PCRE_VER}.tar.gz" ]; then
+            wget https://ftp.pcre.org/pub/pcre/pcre-${PCRE_VER}.tar.gz
+          fi
+          tar xzf pcre-${PCRE_VER}.tar.gz
+          cd pcre-${PCRE_VER}
+          ./configure --prefix=$HOME/pcre --disable-shared --enable-static
+          make -j$(nproc)
+          make install
+
+      # ⑩ Cache zlib
+      - name: Cache zlib
+        uses: actions/cache@v4
+        with:
+          path: ~/zlib
+          key: zlib-${{ env.ZLIB_VER }}-${{ runner.os }}
+          restore-keys: zlib-${{ env.ZLIB_VER }}-${{ runner.os }}
+
+      # ⑪ 编译 zlib（静态）
+      - name: Build zlib static
+        run: |
+          mkdir -p ~/zlib
+          cd ~/zlib
+          if [ ! -f "zlib-${ZLIB_VER}.tar.gz" ]; then
+            wget https://zlib.net/zlib-${ZLIB_VER}.tar.gz
+          fi
+          tar xzf zlib-${ZLIB_VER}.tar.gz
+          cd zlib-${ZLIB_VER}
+          ./configure --prefix=$HOME/zlib --static
+          make -j$(nproc)
+          make install
+
+      # ⑫ Cache Nginx
+      - name: Cache Nginx
+        uses: actions/cache@v4
+        with:
+          path: ~/nginx
+          key: nginx-${{ env.NGINX_VER }}-${{ runner.os }}
+          restore-keys: nginx-${{ env.NGINX_VER }}-${{ runner.os }}
+
+      # ⑬ 下载并编译 Nginx（静态，HTTP/3）
+      - name: Build Nginx static with HTTP/3
+        run: |
+          mkdir -p ~/nginx
+          cd ~/nginx
+          if [ ! -f "nginx-${NGINX_VER}.tar.gz" ]; then
+            wget https://nginx.org/download/nginx-${NGINX_VER}.tar.gz
+          fi
+          tar xzf nginx-${NGINX_VER}.tar.gz
+          cd nginx-${NGINX_VER}
+          ./auto/configure \
+            --prefix=/opt/nginx \
+            --sbin-path=/opt/nginx/nginx \
+            --modules-path=/opt/nginx/modules \
+            --conf-path=/opt/nginx/nginx.conf \
+            --error-log-path=/opt/nginx/log/error.log \
+            --http-log-path=/opt/nginx/log/access.log \
+            --pid-path=/opt/nginx/run/nginx.pid \
+            --lock-path=/opt/nginx/run/nginx.lock \
+            --with-cc-opt="-static -O2 -march=native -I$HOME/openssl/include -I$HOME/pcre/include -I$HOME/zlib/include" \
+            --with-ld-opt="-static -Wl,-Bstatic -L$HOME/openssl/lib -L$HOME/pcre/lib -L$HOME/zlib/lib -ldl -lpthread -lssl -lcrypto -lz" \
+            --with-http_v3_module \
+            --with-http_ssl_module \
+            --with-http_gzip_static_module \
+            --with-pcre-jit \
+            --with-openssl=$HOME/openssl
+          make -j$(nproc)
+          make install
+
+      # ⑭ 准备一个最小 HTTP/3 配置（可自行替换）
+      - name: Prepare HTTP/3 config
+        run: |
+          mkdir -p $HOME/nginx-config/conf.d
+          cat > $HOME/nginx-config/conf.d/http3.conf <<'EOF'
+server {
+    listen 443 ssl http2;
+    listen 443 quic reuseport;
+    ssl_certificate /etc/nginx/ssl/nginx.crt;
+    ssl_certificate_key /etc/nginx/ssl/nginx.key;
+    ssl_protocols TLSv1.3;
+    ssl_prefer_server_ciphers off;
+    ssl_ciphers 'TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256';
+    root /var/www/html;
+    index index.html index.htm;
+}
+EOF
+
+      # ⑮ 打包二进制 + 配置
+      - name: Package
+        run: |
+          tar -czf nginx-static.tar.gz -C /opt/nginx . -C $HOME/nginx-config .
+
+      # ⑯ 上传 artifact
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nginx-static-${{ env.NGINX_VER }}
+          path: nginx-static.tar.gz
+
+      # ⑰ (可选) 验证编译结果
+      - name: Verify build
+        run: |
+          /opt/nginx/nginx -V
+          # 下面的 curl 需要 curl 7.80+，可在后续 job 中安装
+          # curl -I --http3 https://example.com
