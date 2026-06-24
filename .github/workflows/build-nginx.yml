@@ -26,11 +26,11 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest]
         arch: [x86_64, arm64]
-        exclude:                  # <‑‑ 过滤掉不合法组合
-          - os: macos-latest
-            arch: x86_64           # macOS 只能跑 arm64
+        # exclude:                  # <‑‑ 过滤掉不合法组合
+        #   - os: macos-latest
+        #     arch: x86_64           # macOS 只能跑 arm64
     runs-on: ${{ matrix.os }}
     env:
       # ③ 统一放在 env 里，方便后面引用
@@ -50,11 +50,6 @@ jobs:
         run: |
           sudo apt-get update -y
           sudo apt-get install -y build-essential wget git ca-certificates
-
-      - name: Install build tools (macOS)
-        if: matrix.os == 'macos-latest'
-        run: |
-          brew install wget git ca-certificates
 
       # ⑥ Cache OpenSSL build (to speed up)
       - name: Cache OpenSSL
@@ -136,38 +131,6 @@ jobs:
           key: nginx-${{ env.NGINX_VER }}-${{ runner.os }}
           restore-keys: nginx-${{ env.NGINX_VER }}-${{ runner.os }}
 
-      # ⑬ 下载并编译 Nginx（静态，HTTP/3）
-      - name: Build Nginx static with HTTP/3
-        if: matrix.os == 'macos-latest'
-        run: |
-          mkdir -p ~/nginx
-          cd ~/nginx
-          if [ ! -f "nginx-${NGINX_VER}.tar.gz" ]; then
-            wget https://nginx.org/download/nginx-${NGINX_VER}.tar.gz
-          fi
-          tar xzf nginx-${NGINX_VER}.tar.gz
-          cd nginx-${NGINX_VER}
-          ./configure \
-            --prefix=/opt/nginx \
-            --sbin-path=/opt/nginx/nginx \
-            --modules-path=/opt/nginx/modules \
-            --conf-path=/opt/nginx/nginx.conf \
-            --error-log-path=/opt/nginx/log/error.log \
-            --http-log-path=/opt/nginx/log/access.log \
-            --pid-path=/opt/nginx/run/nginx.pid \
-            --lock-path=/opt/nginx/run/nginx.lock \
-            --with-cc-opt="-static -O2 -march=native \
-                     -I$HOME/openssl/include -I$HOME/pcre/include -I$HOME/zlib/include" \
-            --with-ld-opt="-L$HOME/openssl/lib -L$HOME/pcre/lib -L$HOME/zlib/lib \
-                     -lssl -lcrypto -lz -ldl -lpthread" \
-            --with-http_v3_module \
-            --with-http_ssl_module \
-            --with-http_gzip_static_module
-            # --with-pcre2 \
-            # --with-pcre2-jit \
-            # --with-openssl=$HOME/openssl
-          make -j$(nproc)
-          make install
         # ⑬ 下载并编译 Nginx（静态，HTTP/3）
       - name: Build Nginx static with HTTP/3
         if: matrix.os == 'ubuntu-latest'
