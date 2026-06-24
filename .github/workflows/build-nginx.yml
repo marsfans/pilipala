@@ -52,6 +52,26 @@ jobs:
         uses: microsoft/setup-msbuild@v1.1
         with:
           vs-version: '17.8'   # 默认最新版本
+      - name: Find Visual Studio installation
+        shell: pwsh
+        id: vs
+        run: |
+          # vswhere.exe 负责找最近的 VS 安装
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $installPath = & $vswhere -latest -property installationPath
+          Write-Host "##[set-output name=path]$installPath"
+      
+      - name: Add nmake to PATH
+        shell: pwsh
+        run: |
+          # 取出 VS 目录
+          $vs = "${{ steps.vs.outputs.path }}"
+          # 取最新的 MSVC 版本
+          $msp = Get-ChildItem "$vs\VC\Tools\MSVC" | Sort-Object Name -Descending | Select-Object -First 1
+          # 这就是 nmake.exe 所在的目录
+          $nmakeDir = Join-Path $vs "VC\Tools\MSVC\$msp\bin\Hostx64\x64"
+          # 把它加到 PATH
+          echo "$nmakeDir" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       # ------------------------------------------------------------------
       # 2️⃣  安装 vcpkg 并集成到 MSBuild
