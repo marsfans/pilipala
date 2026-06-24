@@ -24,7 +24,10 @@ jobs:
         with:
           repository: leisurehuang/Leplayer
           fetch-depth: 0
-
+      - name: Detailed CPU Info
+        run: |
+          # 所有 CPU 相关 sysctl 参数
+          sysctl -a | grep cpu
       - name: Select Xcode
         run: sudo xcode-select -s "/Applications/Xcode_26.1.app"
       - name: pod install
@@ -34,7 +37,7 @@ jobs:
           xcodebuild -list
           xcodebuild \
           -workspace Leplayer.xcworkspace \
-          -scheme "Leplayer" \
+          -scheme Leplayer \
           # -configuration ${{ github.event.inputs.build_type }} \
           # -sdk tvos \
           -destination 'platform=tvOS Simulator,name=Apple TV 4K (3rd generation)' \
