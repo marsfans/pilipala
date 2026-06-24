@@ -86,7 +86,13 @@ jobs:
           # 你也可以直接 `git clone` 官方仓库
 
           # 进入源码目录
-          cd .\nginx-${{ env.NGINX_VER }}
+          mkdir -p ~/nginx
+          cd ~/nginx
+          if [ ! -f "nginx-${NGINX_VER}.tar.gz" ]; then
+            wget https://nginx.org/download/nginx-${NGINX_VER}.tar.gz
+          fi
+          tar xzf nginx-${NGINX_VER}.tar.gz
+          cd nginx-${NGINX_VER}
 
           # 运行 configure
           ./configure `
@@ -144,6 +150,7 @@ jobs:
           C:\nginx\nginx.exe -V
           # 下面的 curl 需要 curl 7.80+，可在后续 job 中安装
           # curl -I --http3 https://example.com
+          
   build-linux:
     strategy:
       matrix:
