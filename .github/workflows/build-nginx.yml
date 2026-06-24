@@ -169,7 +169,11 @@ jobs:
               index index.html index.htm;
           }
           EOF
-
+         # ──────────────────────────────────────────────────────────────────────
+      # ⑩ 打包
+      - name: Package
+        run: |
+          tar -czf nginx-static.tar.gz -C /opt/nginx . -C $HOME/nginx-config .
        # ──────────────────────────────────────────────────────────────────────
       # ⑬ 重命名 tarball 以包含所有版本号
       - name: Rename artifact
