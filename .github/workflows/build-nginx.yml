@@ -132,7 +132,7 @@ jobs:
           fi
           tar xzf nginx-${NGINX_VER}.tar.gz
           cd nginx-${NGINX_VER}
-          ./auto/configure \
+          ./configure \
             --prefix=/opt/nginx \
             --sbin-path=/opt/nginx/nginx \
             --modules-path=/opt/nginx/modules \
@@ -146,7 +146,8 @@ jobs:
             --with-http_v3_module \
             --with-http_ssl_module \
             --with-http_gzip_static_module \
-            --with-pcre-jit \
+            --with-pcre2 \
+            --with-pcre2-jit \
             --with-openssl=$HOME/openssl
           make -j$(nproc)
           make install
