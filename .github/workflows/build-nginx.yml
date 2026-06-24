@@ -88,9 +88,9 @@ jobs:
           # 进入源码目录
           mkdir -p ~/nginx
           cd ~/nginx
-          curl -L -O https://nginx.org/download/nginx-${NGINX_VER}.tar.gz
-          tar xzf nginx-${NGINX_VER}.tar.gz
-          cd nginx-${NGINX_VER}
+          curl -L -O https://nginx.org/download/nginx-${{ env.NGINX_VER }}.tar.gz
+          tar xzf nginx-${{ env.NGINX_VER }}.tar.gz
+          cd nginx-${{ env.NGINX_VER }}
 
           # 运行 configure
           ./configure `
