@@ -33,10 +33,11 @@ jobs:
         run: |
           xcodebuild -list
           xcodebuild \
-          -project "Leplayer.xcodeproj" \
+          -workspace Leplayer.xcworkspace \
           -scheme "Leplayer" \
-          -configuration ${{ github.event.inputs.build_type }} \
-          -sdk tvos \
+          # -configuration ${{ github.event.inputs.build_type }} \
+          # -sdk tvos \
+          -destination 'platform=tvOS Simulator,name=Apple TV 4K (3rd generation)' \
           CODE_SIGNING_ALLOWED=NO \
           CODE_SIGN_IDENTITY="" \
           PROVISIONING_PROFILE_SPECIFIER="" \
