@@ -30,10 +30,11 @@ jobs:
 
       - name: Build iOS target
         run: |
-          xcodebuild -list
           ./scripts/build-rust.sh        # → ShadowVPNCore/Frameworks/ShadowVPNCore.xcframework
           brew install xcodegen
           ./scripts/generate-xcodeproj.sh   # → shadowvpn-ios.xcodeproj
+          ./scripts/gen-gfwlist.sh
+          xcodebuild -list
           xcodebuild \
           -project shadowvpn-ios.xcodeproj
           -scheme shadowvpn-ios
