@@ -14,7 +14,9 @@ permissions:
   contents: write    # 需要写权限以便创建 release / tag
   packages: write
   issues: write
-
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  
 jobs:
  Android:
     name: Android
@@ -42,6 +44,7 @@ jobs:
         shell: bash
         run: |
           cd android
+          sed -i '/^org.gradle.java.home=/d' gradle.properties
           echo ${{ secrets.MYAPP_KEYSTORE_BASE64 }} | base64 --decode > app/${{ secrets.MYAPP_UPLOAD_STORE_FILE }}
           chmod +x ./gradlew
           ./gradlew assembleRelease -PMYAPP_UPLOAD_STORE_FILE='${{ secrets.MYAPP_UPLOAD_STORE_FILE }}' -PMYAPP_UPLOAD_KEY_ALIAS='${{ secrets.MYAPP_UPLOAD_KEY_ALIAS }}' -PMYAPP_UPLOAD_STORE_PASSWORD='${{ secrets.MYAPP_UPLOAD_STORE_PASSWORD }}' -PMYAPP_UPLOAD_KEY_PASSWORD='${{ secrets.MYAPP_UPLOAD_KEY_PASSWORD }}'
