@@ -24,13 +24,17 @@ jobs:
 
     steps:
       - name: Checkout specified repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           # 显式指定仓库（owner/repo）
           repository: 'WalnutBai/lx-lxwalnut-music-mobile'
           # 如果需要拉取特定 ref，可改为 refs/tags/${{ github.event.inputs.tag }} 或 github.ref
           fetch-depth: 0
-
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'temurin'
       - name: Setup Env
         uses: ./.github/actions/setup
 
