@@ -33,12 +33,12 @@ jobs:
           ./scripts/build-rust.sh        # → ShadowVPNCore/Frameworks/ShadowVPNCore.xcframework
           brew install xcodegen
           ./scripts/generate-xcodeproj.sh   # → shadowvpn-ios.xcodeproj
-          ./scripts/gen-gfwlist.sh
+          # ./scripts/gen-gfwlist.sh
           xcodebuild -list
           xcodebuild \
-          -project shadowvpn-ios.xcodeproj
-          -scheme shadowvpn-ios
-          -configuration ${{ github.event.inputs.build_type }} \
+          -project shadowvpn-ios.xcodeproj \
+          -scheme shadowvpn-ios \
+          # -configuration ${{ github.event.inputs.build_type }} \
           -destination 'generic/platform=iOS Simulator' \
           CODE_SIGNING_ALLOWED=NO \
           CODE_SIGN_IDENTITY="" \
