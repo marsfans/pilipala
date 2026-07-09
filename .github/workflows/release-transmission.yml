@@ -13,7 +13,7 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]   # Windows 已换成 macOS
+        os: [ubuntu-24.04, macos-latest]
 
     runs-on: ${{ matrix.os }}
     
@@ -36,13 +36,12 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt update
-          
-          # 安装编译依赖
           sudo apt install -y \
-            build-essential cmake git libcurl4-openssl-dev \
-            libb64-dev libdeflate-dev libevent-dev libminiupnpc-dev libnatpmp-dev libsystemd-dev \
-            gettext libgtkmm-4.0-dev libgtkmm-3.0-dev \
-            libqt5svg5-dev qttools5-dev qt6-svg-dev qt6-tools-dev
+            build-essential cmake ninja-build \
+            libcurl4-openssl-dev libssl-dev libevent-dev libdeflate-dev \
+            libgtk-4-dev libgtkmm-4.0-dev libglibmm-2.68-dev libgiomm-2.68-dev \
+            qtbase5-dev qttools5-dev qttools5-dev-tools \
+            libappindicator3-dev
 
       - name: Install deps (macOS)
         if: runner.os == 'macOS'
@@ -58,6 +57,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DENABLE_CLI=ON \
             -DENABLE_DAEMON=ON \
+            -DENABLE_UTILS=ON \                    # 编译 transmission-remote 等工具
             -DENABLE_GTK=${{ runner.os == 'Linux' && 'ON' || 'OFF' }} \
             -DENABLE_QT=ON \
             -DENABLE_MAC=${{ runner.os == 'macOS' && 'ON' || 'OFF' }}
@@ -65,7 +65,7 @@ jobs:
       - name: Build
         run: |
           if [[ "$RUNNER_OS" == "macOS" ]]; then
-            ninja -C build transmission-mac transmission-cli transmission-daemon
+            ninja -C build transmission-mac transmission-cli transmission-daemon transmission-remote transmission-create transmission-edit transmission-show
           else
             cmake --build build --parallel
           fi
@@ -76,13 +76,18 @@ jobs:
         run: |
           mkdir -p dist
           if [[ "$RUNNER_OS" == "Linux" ]]; then
-            cp build/daemon/transmission-daemon dist/
-            cp build/cli/transmission-cli dist/
-            cp -r build/gtk dist/ || true
+            cp build/daemon/transmission-daemon dist/ 2>/dev/null || true
+            cp build/cli/transmission-cli dist/ 2>/dev/null || true
+            cp build/utils/transmission-remote dist/ 2>/dev/null || true
+            cp build/utils/transmission-create dist/ 2>/dev/null || true
+            cp build/utils/transmission-edit dist/ 2>/dev/null || true
+            cp build/utils/transmission-show dist/ 2>/dev/null || true
+            cp -r build/gtk dist/ 2>/dev/null || true
           elif [[ "$RUNNER_OS" == "macOS" ]]; then
-            cp build/transmission-mac dist/Transmission.app || true
-            cp build/cli/transmission-cli dist/
-            cp build/daemon/transmission-daemon dist/
+            cp build/transmission-mac dist/Transmission.app 2>/dev/null || true
+            cp build/cli/transmission-cli dist/ 2>/dev/null || true
+            cp build/daemon/transmission-daemon dist/ 2>/dev/null || true
+            cp build/utils/transmission-* dist/ 2>/dev/null || true
           fi
           
           tar -czf transmission-${{ steps.version.outputs.version }}-${{ runner.os }}.tar.gz dist
@@ -94,7 +99,6 @@ jobs:
           path: transmission-${{ steps.version.outputs.version }}-${{ runner.os }}.tar.gz
 
   release:
-    name: Create GitHub Release
     needs: build
     runs-on: ubuntu-latest
     permissions:
@@ -112,7 +116,13 @@ jobs:
           body: |
             ## Transmission ${{ github.event.inputs.version }}
             
-            Automated build for Linux and macOS.
+            **Included Tools:**
+            - transmission-cli
+            - transmission-daemon
+            - transmission-remote
+            - transmission-create
+            - transmission-edit
+            - transmission-show
           draft: false
           prerelease: false
           files: |
