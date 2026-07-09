@@ -35,6 +35,7 @@ jobs:
           brew install xcodegen
           ./scripts/generate-xcodeproj.sh   # → shadowvpn-ios.xcodeproj
           # ./scripts/gen-gfwlist.sh
+          xcodebuild -list
           xcodebuild \
           -project shadowvpn-ios.xcodeproj \
           -scheme shadowvpn-ios \
