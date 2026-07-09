@@ -36,15 +36,16 @@ jobs:
           ./scripts/generate-xcodeproj.sh   # → shadowvpn-ios.xcodeproj
           # ./scripts/gen-gfwlist.sh
           xcodebuild -list
-          xcodebuild \
+          xcodebuild clean build \
           -project shadowvpn-ios.xcodeproj \
           -scheme shadowvpn-ios \
-          # -configuration ${{ github.event.inputs.build_type }} \
-          -destination 'generic/platform=iOS Simulator' \
+          -configuration Release \
+          -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=latest' \
           CODE_SIGNING_ALLOWED=NO \
           CODE_SIGN_IDENTITY="" \
           PROVISIONING_PROFILE_SPECIFIER="" \
-          SKIP_INSTALL=NO
+          SKIP_INSTALL=NO \
+          | xcpretty
           # archive \
           # -archivePath build/ios/shadowvpn-ios.xcarchive
       - name: Export app and zip
