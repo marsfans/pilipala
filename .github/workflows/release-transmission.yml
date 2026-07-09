@@ -37,17 +37,17 @@ jobs:
         run: |
           sudo apt update
           
-          # 添加 PPA 获取最新 gtkmm-4.0
-          sudo apt install -y software-properties-common
-          sudo add-apt-repository ppa:ubuntuhandbook1/gtkmm4 -y
-          sudo apt update
-          
+          # 安装编译依赖
           sudo apt install -y \
-            build-essential automake autoconf libtool pkg-config intltool gettext \
+            build-essential cmake ninja-build git curl \
+            automake autoconf libtool pkg-config intltool gettext \
             libcurl4-openssl-dev libssl-dev libevent-dev libdeflate-dev \
-            libgtk-4-dev libgtkmm-4.0-dev libglibmm-2.68-dev libgiomm-2.68-dev \
+            libgtk-4-dev libglib2.0-dev libglibmm-2.68-dev libgiomm-2.68-dev \
             qtbase5-dev qttools5-dev qttools5-dev-tools \
             libappindicator3-dev
+          
+          # 如果 gtkmm-4.0 还是找不到，尝试安装 gtkmm-4.0-dev
+          sudo apt install -y libgtkmm-4.0-dev || echo "gtkmm-4.0-dev not found, continuing..."
 
       - name: Install deps (macOS)
         if: runner.os == 'macOS'
