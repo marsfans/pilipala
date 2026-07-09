@@ -39,15 +39,10 @@ jobs:
           
           # 安装编译依赖
           sudo apt install -y \
-            build-essential cmake ninja-build git curl \
-            automake autoconf libtool pkg-config intltool gettext \
-            libcurl4-openssl-dev libssl-dev libevent-dev libdeflate-dev \
-            libgtk-4-dev libglib2.0-dev libglibmm-2.68-dev libgiomm-2.68-dev \
-            qtbase5-dev qttools5-dev qttools5-dev-tools \
-            libappindicator3-dev
-          
-          # 如果 gtkmm-4.0 还是找不到，尝试安装 gtkmm-4.0-dev
-          sudo apt install -y libgtkmm-4.0-dev || echo "gtkmm-4.0-dev not found, continuing..."
+            build-essential cmake git libcurl4-openssl-dev \
+            libb64-dev libdeflate-dev libevent-dev libminiupnpc-dev libnatpmp-dev libsystemd-dev \
+            gettext libgtkmm-4.0-dev libgtkmm-3.0-dev \
+            libqt5svg5-dev qttools5-dev qt6-svg-dev qt6-tools-dev
 
       - name: Install deps (macOS)
         if: runner.os == 'macOS'
