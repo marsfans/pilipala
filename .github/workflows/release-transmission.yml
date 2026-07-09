@@ -13,13 +13,10 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ubuntu-latest,  windows-latest] #macos-latest,
+        os: [ubuntu-latest, macos-latest]   # Windows 已换成 macOS
 
     runs-on: ${{ matrix.os }}
-
-    outputs:
-      version: ${{ steps.version.outputs.version }}
-
+    
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -32,12 +29,7 @@ jobs:
       - name: Determine version
         id: version
         shell: bash
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
-          else
-            echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
-          fi
+        run: echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
 
       # -------- Dependencies --------
       - name: Install deps (Linux)
@@ -53,50 +45,43 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           brew update
-          brew install cmake ninja curl openssl libevent qt gtk4 gtkmm4
-
-      - name: Install deps (Windows)
-        if: runner.os == 'Windows'
-        # uses: lukka/run-vcpkg@v11
-        # with:
-        #   vcpkgArguments: >
-        #     curl zlib openssl qt5-tools qt5-winextras
-        #   vcpkgDirectory: ${{ github.workspace }}/vcpkg
-        run: vcpkg install curl zlib openssl qt5-tools qt5-winextras
+          brew install cmake ninja curl openssl@3 libevent qt@6 gtk4 gtkmm4
 
       # -------- Build --------
       - name: Configure
         run: |
           cmake -S . -B build \
             -G Ninja \
-            -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
             -DCMAKE_BUILD_TYPE=Release \
             -DENABLE_CLI=ON \
             -DENABLE_DAEMON=ON \
             -DENABLE_GTK=${{ runner.os == 'Linux' && 'ON' || 'OFF' }} \
-            -DENABLE_QT=${{ runner.os == 'Windows' && 'ON' || 'OFF' }}
+            -DENABLE_QT=ON \
+            -DENABLE_MAC=${{ runner.os == 'macOS' && 'ON' || 'OFF' }}
 
       - name: Build
         run: |
           if [[ "$RUNNER_OS" == "macOS" ]]; then
-            ninja -C build transmission-mac
+            ninja -C build transmission-mac transmission-cli transmission-daemon
           else
             cmake --build build --parallel
           fi
-        env:
-          RUNNER_OS: ${{ runner.os }}
-
 
       # -------- Package --------
       - name: Package
         shell: bash
         run: |
-          mkdir dist1
-          cp build/daemon/transmission-daemon* dist/ || true
-          cp build/cli/transmission-cli* dist/ || true
-          cp -r build/gtk dist/ || true
-          cp -r build/qt dist/ || true
-
+          mkdir -p dist
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            cp build/daemon/transmission-daemon dist/
+            cp build/cli/transmission-cli dist/
+            cp -r build/gtk dist/ || true
+          elif [[ "$RUNNER_OS" == "macOS" ]]; then
+            cp build/transmission-mac dist/Transmission.app || true
+            cp build/cli/transmission-cli dist/
+            cp build/daemon/transmission-daemon dist/
+          fi
+          
           tar -czf transmission-${{ steps.version.outputs.version }}-${{ runner.os }}.tar.gz dist
 
       - name: Upload artifact
@@ -106,8 +91,11 @@ jobs:
           path: transmission-${{ steps.version.outputs.version }}-${{ runner.os }}.tar.gz
 
   release:
+    name: Create GitHub Release
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Download artifacts
@@ -116,19 +104,13 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: Transmission v${{ needs.build.outputs.version }}
-          name: Transmission v${{ needs.build.outputs.version }}
+          tag_name: ${{ github.event.inputs.version }}
+          name: "Transmission ${{ github.event.inputs.version }}"
           body: |
-            Automated build of Transmission
-            Version: ${{ needs.build.outputs.version }}
-
-            Included:
-            - CLI
-            - Daemon
-            - GTK (Linux)
-            - Qt (All platforms)
+            ## Transmission ${{ github.event.inputs.version }}
+            
+            Automated build for Linux and macOS.
+          draft: false
+          prerelease: false
           files: |
             **/*.tar.gz
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
