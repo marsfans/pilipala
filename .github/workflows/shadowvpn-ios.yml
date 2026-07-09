@@ -39,15 +39,16 @@ jobs:
           xcodebuild clean build \
           -project shadowvpn-ios.xcodeproj \
           -scheme shadowvpn-ios \
-          -configuration Release \
-          -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=latest' \
+          -configuration "${{ github.event.inputs.build_type }}" \
+          -destination 'generic/platform=iOS Simulator' \
           CODE_SIGNING_ALLOWED=NO \
           CODE_SIGN_IDENTITY="" \
           PROVISIONING_PROFILE_SPECIFIER="" \
           SKIP_INSTALL=NO \
+          archive \
+          -archivePath build/ios/shadowvpn-ios.xcarchive \
           | xcpretty
-          # archive \
-          # -archivePath build/ios/shadowvpn-ios.xcarchive
+          
       - name: Export app and zip
         run: |
           mkdir -p Payload
