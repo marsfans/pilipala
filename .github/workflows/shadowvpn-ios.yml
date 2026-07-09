@@ -31,6 +31,7 @@ jobs:
       - name: Build iOS target
         run: |
           ./scripts/build-rust.sh        # → ShadowVPNCore/Frameworks/ShadowVPNCore.xcframework
+          echo "// Local.xcconfig - Placeholder" > Local.xcconfig
           brew install xcodegen
           ./scripts/generate-xcodeproj.sh   # → shadowvpn-ios.xcodeproj
           # ./scripts/gen-gfwlist.sh
