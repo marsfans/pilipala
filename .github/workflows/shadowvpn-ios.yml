@@ -34,7 +34,6 @@ jobs:
           brew install xcodegen
           ./scripts/generate-xcodeproj.sh   # → shadowvpn-ios.xcodeproj
           # ./scripts/gen-gfwlist.sh
-          xcodebuild -list
           xcodebuild \
           -project shadowvpn-ios.xcodeproj \
           -scheme shadowvpn-ios \
@@ -43,9 +42,9 @@ jobs:
           CODE_SIGNING_ALLOWED=NO \
           CODE_SIGN_IDENTITY="" \
           PROVISIONING_PROFILE_SPECIFIER="" \
-          SKIP_INSTALL=NO \
-          archive \
-          -archivePath build/ios/shadowvpn-ios.xcarchive
+          SKIP_INSTALL=NO
+          # archive \
+          # -archivePath build/ios/shadowvpn-ios.xcarchive
       - name: Export app and zip
         run: |
           mkdir -p Payload
