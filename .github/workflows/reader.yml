@@ -22,8 +22,8 @@ jobs:
           # ----------------------------------------------------
             - os: ubuntu-latest
               target: x86_64-unknown-linux-gnu
-            # - os: ubuntu-latest
-            #   target: aarch64-unknown-linux-musl
+            - os: ubuntu-latest
+              target: aarch64-unknown-linux-gnu
             # ----------------------------------------------------
             # macOS
             # ----------------------------------------------------
@@ -58,7 +58,7 @@ jobs:
           target: ${{ matrix.target }}
           override: true
           cache: true
-
+      
       # ----------------------------------------------------------------
       # 2️⃣ 3. Cache Cargo registry / builds (speed boost)
       # ----------------------------------------------------------------
@@ -71,7 +71,18 @@ jobs:
           key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.toml') }}
           restore-keys: |
             ${{ runner.os }}-cargo-registry-
-
+      - name: Install gcc-aarch64-linux-gnu
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # 可以指定具体版本，如 18, 20, 22 或 'lts/*'
+      - name: Install dependencies and Build frontend
+        run: |
+          cd frontend
+          npm install
+          npm run build
       - name: Cache Cargo build
         uses: actions/cache@v4
         with:
@@ -98,14 +109,18 @@ jobs:
           mkdir -p artifacts
           ls
           tree target/
-          cp target/${{ matrix.target }}/release/${{ env.PROJECT_BIN }} artifacts/reader-rust-${{ matrix.target }}
+          cp target/${{ matrix.target }}/release/${{ env.PROJECT_BIN }} artifacts/
+          cp .env.example artifacts/.env
+          mv frontend/dist artifacts/
+          tar -czvf reader-rust-${{ matrix.target }}.tar.gz artifacts/*
         env:
           # 如果你的二进制名不是 Cargo package name，手动修改
           PROJECT_BIN: reader-rust
           # Windows 需要 .exe
           # PROJECT_BIN: reader-rust.exe
         shell: bash
-        
+      
+
       # - name: Install tree on Linux
       #   if: matrix.target != 'macos-latest'
       #   run: sudo apt-get install -y tree
@@ -123,5 +138,5 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: "reader-rust-v${{ github.event.inputs.tags }}"
-          files: artifacts/*
+          files: reader-rust-${{ matrix.target }}.tar.gz
 
