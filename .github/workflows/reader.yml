@@ -1,0 +1,33 @@
+name: Build & Release reader Multi-Platform
+
+on:
+  workflow_dispatch:
+    inputs:
+      caddy_version:
+        description: '指定 reader 版本号（如 v2.8.4 或 latest）'
+        required: true
+        default: 'latest'
+jobs:
+  build-reader:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          repository: chenglu1129/reader-spring-vue
+
+      - name: Setup node
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+      - name: Build web
+        run: cd web && npm install && npm run build
+      - name: Setup Java
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'temurin'
+          java-version: '8'
+          cache: 'gradle'
+      - name: Build Java
+        run:
+          mv ./web/dist ./src/main/resources/web && rm src/main/java/com/htmake/reader/ReaderUIApplication.kt && gradle -b cli.gradle assemble --info && mv ./build/libs/*.jar ./reader.jar
