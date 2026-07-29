@@ -98,7 +98,7 @@ jobs:
           mkdir -p artifacts
           ls
           tree target/
-          cp target/${{ matrix.target }}/release/${{ env.PROJECT_BIN }} artifacts/
+          cp target/${{ matrix.target }}/release/${{ env.PROJECT_BIN }} artifacts/reader-rust-${{ matrix.target }}
         env:
           # 如果你的二进制名不是 Cargo package name，手动修改
           PROJECT_BIN: reader-rust
@@ -123,5 +123,5 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: "reader-rust-v${{ github.event.inputs.tags }}"
-          files: artifacts/${{ env.PROJECT_BIN }}
+          files: artifacts/*
 
