@@ -1,43 +1,130 @@
-name: Build & Release reader Multi-Platform
-
+name: Rust reader-rust CI
 on:
+  # ① 通过 Web UI 手动触发
   workflow_dispatch:
     inputs:
       tags:
-        description: '指定 reader 版本号（如 v2.8.4 或 latest）'
+        description: '指定 reader-rust 版本号（如 v1.2.3 或 latest）'
         required: true
-        default: 'latest'
-jobs:
-  build-reader:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          repository: chenglu1129/reader-spring-vue
+        default: '1.0.8'
 
-      - name: Setup node
-        uses: actions/setup-node@v2
+jobs:
+  build:
+    name: Build on ${{ matrix.os }} (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          # ----------------------------------------------------
+          # Linux
+          # ----------------------------------------------------
+            - os: ubuntu-latest
+              target: x86_64-unknown-linux-gnu
+            - os: ubuntu-latest
+              target: i686-unknown-linux-gnu
+            - os: ubuntu-latest
+              target: aarch64-unknown-linux-gnu
+            # ----------------------------------------------------
+            # macOS
+            # ----------------------------------------------------
+            - os: macos-latest
+              target: x86_64-apple-darwin
+            - os: macos-latest
+              target: aarch64-apple-darwin
+            # ----------------------------------------------------
+            # Windows
+            # ----------------------------------------------------
+            - os: windows-latest
+              target: x86_64-pc-windows-msvc
+            - os: windows-latest
+              target: i686-pc-windows-msvc
+    steps:
+      # ----------------------------------------------------------------
+      # 0️⃣ 1. Checkout the repo *exactly* at the wanted ref
+      # ----------------------------------------------------------------
+      - name: Checkout source
+        uses: actions/checkout@v4
         with:
-          node-version: '14'
-      - name: Setup Java
-        uses: actions/setup-java@v5
+          repository: 'givenge/reader-rust'
+
+      # ----------------------------------------------------------------
+      # 1️⃣ 2. Install Rust toolchain (stable) and the target you need
+      # ----------------------------------------------------------------
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
         with:
-          distribution: 'zulu'
-          java-version: '11'
-          cache: 'gradle'
-      - name: Build web
-        run: cd web && npm install && npm run build
-      - name: Build Java
-        run:
-          mv ./web/dist ./src/main/resources/web && ./gradlew -b cli.gradle assemble --info && mv ./build/libs/*.jar ./reader.jar
-      - name: 创建 Release
+          rustup_component_name: rust-src
+          toolchain: stable
+          target: ${{ matrix.target }}
+          override: true
+          cache: true
+
+      # ----------------------------------------------------------------
+      # 2️⃣ 3. Cache Cargo registry / builds (speed boost)
+      # ----------------------------------------------------------------
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
+
+      - name: Cache Cargo build
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: ${{ runner.os }}-cargo-build-${{ matrix.target }}-${{ hashFiles('**/Cargo.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-build-${{ matrix.target }}-
+
+      # ----------------------------------------------------------------
+      # 3️⃣ 4. Build the binary
+      # ----------------------------------------------------------------
+      - name: Build release
+        run: cargo build --release --target ${{ matrix.target }}
+      
+      # 只有当 target 是 macos 时才执行 brew install tree
+      - name: Install tree on macOS
+        if: matrix.os == 'macos-latest'
+        run: brew install tree
+      # ----------------------------------------------------------------
+      # 5️⃣ 6. Collect artifacts
+      # ----------------------------------------------------------------
+      - name: Prepare artifact
+        run: |
+          mkdir -p artifacts
+          ls
+          tree target/
+          cp target/${{ matrix.target }}/release/${{ env.PROJECT_BIN }} artifacts/
+        env:
+          # 如果你的二进制名不是 Cargo package name，手动修改
+          PROJECT_BIN: reader-rust
+          # Windows 需要 .exe
+          # PROJECT_BIN: reader-rust.exe
+        shell: bash
+        
+      # - name: Install tree on Linux
+      #   if: matrix.target != 'macos-latest'
+      #   run: sudo apt-get install -y tree
+        
+      # - name: Upload artifact
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: ffmpreg-${{ matrix.target }}-v${{ github.event.inputs.tags }}
+      #     path: artifacts/${{ env.PROJECT_BIN }}
+
+      # ----------------------------------------------------------------
+      # 7️⃣ 7. Optional: create GitHub Release on tag push
+      # ----------------------------------------------------------------
+      - if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: "reader-${{ github.event.inputs.tags }}"
-          name: "reader-${{ github.event.inputs.tags }}"
-          files: "./reader.jar"
-          # draft: false
-          # prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: "reader-rust-v${{ github.event.inputs.tags }}"
+          files: artifacts/${{ env.PROJECT_BIN }}
+
