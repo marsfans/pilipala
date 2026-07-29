@@ -20,14 +20,14 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: '14'
+      - name: Setup Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: 'zulu'
+          java-version: '11'
+          cache: 'gradle'
       - name: Build web
         run: cd web && npm install && npm run build
-      - name: Setup Java
-        uses: actions/setup-java@v2
-        with:
-          distribution: 'temurin'
-          java-version: '8'
-          cache: 'gradle'
       - name: Build Java
         run:
           mv ./web/dist ./src/main/resources/web && rm src/main/java/com/htmake/reader/ReaderUIApplication.kt && gradle -b cli.gradle assemble --info && mv ./build/libs/*.jar ./reader.jar
