@@ -73,7 +73,7 @@ jobs:
             ${{ runner.os }}-cargo-registry-
       - name: Install gcc-aarch64-linux-gnu
         if: matrix.target == 'aarch64-unknown-linux-gnu'
-        run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
+        run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -94,9 +94,13 @@ jobs:
       # ----------------------------------------------------------------
       # 3️⃣ 4. Build the binary
       # ----------------------------------------------------------------
+      
       - name: Build release
         run: cargo build --release --target ${{ matrix.target }}
-      
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        env:
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+          CC_aarch64_unknown_linux_gnu: aarch64-linux-gnu-gcc
       # 只有当 target 是 macos 时才执行 brew install tree
       - name: Install tree on macOS
         if: matrix.os == 'macos-latest'
