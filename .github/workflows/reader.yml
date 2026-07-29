@@ -3,7 +3,7 @@ name: Build & Release reader Multi-Platform
 on:
   workflow_dispatch:
     inputs:
-      caddy_version:
+      tags:
         description: '指定 reader 版本号（如 v2.8.4 或 latest）'
         required: true
         default: 'latest'
@@ -31,3 +31,13 @@ jobs:
       - name: Build Java
         run:
           mv ./web/dist ./src/main/resources/web && rm src/main/java/com/htmake/reader/ReaderUIApplication.kt && ./gradlew assemble --info && mv ./build/libs/*.jar ./reader.jar
+      - name: 创建 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "reader-${{ github.event.inputs.tags }}"
+          name: "reader-${{ github.event.inputs.tags }}"
+          files: "./reader.jar"
+          # draft: false
+          # prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
