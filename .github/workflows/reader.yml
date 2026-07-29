@@ -30,4 +30,4 @@ jobs:
         run: cd web && npm install && npm run build
       - name: Build Java
         run:
-          mv ./web/dist ./src/main/resources/web && rm src/main/java/com/htmake/reader/ReaderUIApplication.kt && gradle -b cli.gradle assemble --info && mv ./build/libs/*.jar ./reader.jar
+          mv ./web/dist ./src/main/resources/web && rm src/main/java/com/htmake/reader/ReaderUIApplication.kt && ./gradlew assemble --info && mv ./build/libs/*.jar ./reader.jar
