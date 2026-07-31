@@ -1,0 +1,66 @@
+name: Build ProtonVPN-Next
+
+on:
+  workflow_dispatch:
+    inputs:
+      tags:
+        description: '指定 ProtonVPN-Next 版本号（如 v1.2.3 或 latest）'
+        required: true
+        default: '12.0.0-alpha2'
+
+jobs:
+  build-anroid:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        repository: SMH01-MIRRORS/ProtonVPN-Next-MIRROR
+        # fetch-depth: 0
+        # submodules: true
+        # ref: test
+
+    - name: set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        cache: 'gradle'
+
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+    - name: Setup gradle
+      uses: gradle/actions/setup-gradle@v3
+    - name: gradlew assembleRelease
+      run: |
+        echo ${{ secrets.MYAPP_KEYSTORE_BASE64 }} | base64 --decode > app/${{ secrets.MYAPP_UPLOAD_STORE_FILE }}
+        chmod +x ./gradlew
+        ./gradlew assembleRelease -PMYAPP_UPLOAD_STORE_FILE='app/${{ secrets.MYAPP_UPLOAD_STORE_FILE }}' -PMYAPP_UPLOAD_KEY_ALIAS='${{ secrets.MYAPP_UPLOAD_KEY_ALIAS }}' -PMYAPP_UPLOAD_STORE_PASSWORD='${{ secrets.MYAPP_UPLOAD_STORE_PASSWORD }}' -PMYAPP_UPLOAD_KEY_PASSWORD='${{ secrets.MYAPP_UPLOAD_KEY_PASSWORD }}'
+
+    # - name: Sign app APK
+    #   id: sign_app
+    #   uses: ilharp/sign-android-release@nightly
+    #   with:
+    #     releaseDir: app/build/outputs/apk/release
+    #     signingKey: ${{ secrets.SIGNING_KEY }}
+    #     keyAlias: ${{ secrets.ALIAS }}
+    #     keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
+    #     keyPassword: ${{ secrets.KEY_PASSWORD }}
+
+    # - name: Upload Artifact
+    #   uses: actions/upload-artifact@v4
+    #   with:
+    #     name: seal-${{ github.event.inputs.tags }}
+    #     path: app/build/outputs/apk/release/*.apk
+    #     # if-no-files-found: error
+    #     # retention-days: 20
+    - name: 创建 Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: "ProtonVPN-Next-${{ github.event.inputs.tags }}"
+        name: "ProtonVPN-Next-${{ github.event.inputs.tags }}"
+        files: app/build/outputs/apk/release/*.apk
+        # draft: false
+        # prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
