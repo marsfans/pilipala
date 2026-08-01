@@ -33,9 +33,10 @@ jobs:
       uses: gradle/actions/setup-gradle@v3
     - name: gradlew assembleDebug
       run: |
-        echo ${{ secrets.MYAPP_KEYSTORE_BASE64 }} | base64 --decode > app/${{ secrets.MYAPP_UPLOAD_STORE_FILE }}
+        # echo ${{ secrets.MYAPP_KEYSTORE_BASE64 }} | base64 --decode > app/${{ secrets.MYAPP_UPLOAD_STORE_FILE }}
         chmod +x ./gradlew
-        ./gradlew assembleDebug -PMYAPP_UPLOAD_STORE_FILE='app/${{ secrets.MYAPP_UPLOAD_STORE_FILE }}' -PMYAPP_UPLOAD_KEY_ALIAS='${{ secrets.MYAPP_UPLOAD_KEY_ALIAS }}' -PMYAPP_UPLOAD_STORE_PASSWORD='${{ secrets.MYAPP_UPLOAD_STORE_PASSWORD }}' -PMYAPP_UPLOAD_KEY_PASSWORD='${{ secrets.MYAPP_UPLOAD_KEY_PASSWORD }}'
+        ./gradlew assembleDebug 
+        # -PMYAPP_UPLOAD_STORE_FILE='app/${{ secrets.MYAPP_UPLOAD_STORE_FILE }}' -PMYAPP_UPLOAD_KEY_ALIAS='${{ secrets.MYAPP_UPLOAD_KEY_ALIAS }}' -PMYAPP_UPLOAD_STORE_PASSWORD='${{ secrets.MYAPP_UPLOAD_STORE_PASSWORD }}' -PMYAPP_UPLOAD_KEY_PASSWORD='${{ secrets.MYAPP_UPLOAD_KEY_PASSWORD }}'
         mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/ProtonVPN-Next-android-v${{ github.event.inputs.tags }}.apk
     # - name: Sign app APK
     #   id: sign_app
@@ -60,15 +61,19 @@ jobs:
         tag_name: "ProtonVPN-Next-${{ github.event.inputs.tags }}"
         name: "ProtonVPN-Next-${{ github.event.inputs.tags }}"
         files: app/build/outputs/apk/debug/*.apk
+        
         # draft: false
         # prerelease: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   build-windows:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
   
     steps:
      - uses: actions/checkout@v4
+     - name: build-windows
+       run: |
+         winget install ezwinports.make
      - name: build-windows
        run: |
         git clone --recursive https://gitlab.com/SMH01/pvpn-next-desktop.git
