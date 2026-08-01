@@ -75,7 +75,7 @@ jobs:
        run: |
          winget install ezwinports.make --accept-source-agreements
      - name: Set up Docker Buildx
-       uses: docker/setup-buildx-action@v3
+       uses: docker/setup-buildx-action@v4
      - name: build-windows
        run: |
         git clone --recursive https://gitlab.com/SMH01/pvpn-next-desktop.git
