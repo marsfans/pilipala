@@ -71,9 +71,9 @@ jobs:
   
     steps:
      - uses: actions/checkout@v4
-     - name: build-windows
+     - name: install make
        run: |
-         winget install ezwinports.make -y
+         winget install ezwinports.make --accept-source-agreements
      - name: build-windows
        run: |
         git clone --recursive https://gitlab.com/SMH01/pvpn-next-desktop.git
