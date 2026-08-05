@@ -30,7 +30,7 @@ jobs:
 
       - name: Build iOS target
         run: |
-          cd apps/ios/Orange Cloud/
+          cd "apps/ios/Orange Cloud/"
           xcodebuild -list
           xcodebuild \
           -project "Orange Cloud.xcodeproj" \
@@ -45,19 +45,20 @@ jobs:
           -archivePath build/ios/Orange-Cloud.xcarchive
       - name: Export app and zip
         run: |
+          cd "apps/ios/Orange Cloud/"
           mkdir -p Payload
           cp -r build/ios/Orange-Cloud.xcarchive/Products/Applications/*.app Payload
           zip -r "Orange-Cloud-${{ github.event.inputs.tags }}.ipa" Payload/
       - uses: actions/upload-artifact@v4
         with:
           name: Orange-Cloud-${{ github.event.inputs.tags }}
-          path: "Orange-Cloud-${{ github.event.inputs.tags }}.ipa"
+          path: "apps/ios/Orange Cloud/Orange-Cloud-${{ github.event.inputs.tags }}.ipa"
       - name: 创建 Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: "Orange-Cloud-${{ github.event.inputs.tags }}"
           name: "Orange-Cloud-${{ github.event.inputs.tags }}"
-          files: "Orange-Cloud-${{ github.event.inputs.tags }}.ipa"
+          files: "apps/ios/Orange Cloud/Orange-Cloud-${{ github.event.inputs.tags }}.ipa"
           # draft: false
           # prerelease: false
         env:
