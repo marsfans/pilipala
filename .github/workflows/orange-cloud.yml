@@ -31,6 +31,8 @@ jobs:
       - name: Build iOS target
         run: |
           cd "apps/ios/Orange Cloud/"
+          xcodebuild -downloadPlatform iOS -architectureVariant arm64
+          xcodebuild -runFirstLaunch
           xcodebuild -list
           xcodebuild \
           -project "Orange Cloud.xcodeproj" \
