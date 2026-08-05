@@ -9,13 +9,13 @@ on:
         required: true
         default: "Release"
       tags:
-        description: '指定 orange-cloud 版本号（如 v1.0.0 或 latest）'
+        description: '指定 orange-cloud-ios 版本号（如 v1.0.0 或 latest）'
         required: true
-        default: '1.3.1'
+        default: '1.9.0'
       android-tags:
-        description: '指定 orange-cloud 版本号（如 v1.0.0 或 latest）'
+        description: '指定 orange-cloud-android 版本号（如 v1.0.0 或 latest）'
         required: true
-        default: '1.3.1'
+        default: '1.7.1'
 
 jobs:
   build-android:
