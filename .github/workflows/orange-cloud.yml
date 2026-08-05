@@ -37,6 +37,7 @@ jobs:
           -scheme "Orange Cloud" \
           -configuration ${{ github.event.inputs.build_type }} \
           -sdk iphoneos \
+          -destination "generic/platform=iOS" \
           CODE_SIGNING_ALLOWED=NO \
           CODE_SIGN_IDENTITY="" \
           PROVISIONING_PROFILE_SPECIFIER="" \
