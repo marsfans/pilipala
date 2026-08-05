@@ -19,6 +19,7 @@ on:
 
 jobs:
   build-android:
+    name: Build android App
     runs-on: ubuntu-latest
 
     steps:
@@ -37,6 +38,12 @@ jobs:
 
     - name: Install Android SDK
       uses: android-actions/setup-android@v3
+    - name: settings Android SDK
+      run: |
+        sdkmanager \
+          "platform-tools" \
+          "platforms;android-36" \
+          "build-tools;36.0.0"
     - name: gradlew assembleOssDebug
       run: |
         cd apps/android
