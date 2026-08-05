@@ -29,30 +29,29 @@ jobs:
         # fetch-depth: 0
         # submodules: true
 
-    - name: Install JetBrains Runtime 21
-      run: |
-        wget https://cache-redirector.jetbrains.com/intellij-jbr/jbrsdk-21.0.7-linux-x64-b895.130.tar.gz
-        tar -xf jbrsdk-21.0.7-linux-x64-b895.130.tar.gz
+    - uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: '21'
+        cache: gradle
     
-        echo "JAVA_HOME=$PWD/jbrsdk-21.0.7" >> $GITHUB_ENV
-        echo "$PWD/jbrsdk-21.0.7/bin" >> $GITHUB_PATH
-    
-    - name: Verify Java
-      run: |
-        java -version
-        echo $JAVA_HOME
 
-    # - name: Install Android SDK
-    #   uses: android-actions/setup-android@v3
-    # - name: settings Android SDK
-    #   run: |
-    #     sdkmanager \
-    #       "platform-tools" \
-    #       "platforms;android-36" \
-    #       "build-tools;36.0.0"
+    - name: Install Android SDK
+      uses: android-actions/setup-android@v3
+    - name: settings Android SDK
+      run: |
+        sdkmanager \
+          "platform-tools" \
+          "platforms;android-36" \
+          "build-tools;36.0.0"
     - name: gradlew assembleOssDebug
       run: |
         cd apps/android
+        find . -name "build.gradle.kts" -exec \
+          sed -i 's/vendor *= *JvmVendorSpec\.JETBRAINS//g' {} \;
+    
+        find . -name "build.gradle.kts" -exec \
+          sed -i 's/vendor\.set(JvmVendorSpec\.JETBRAINS)//g' {} \;
         echo ${{ secrets.MYAPP_KEYSTORE_BASE64 }} | base64 --decode > app/${{ secrets.MYAPP_UPLOAD_STORE_FILE }}
         chmod +x ./gradlew
         ./gradlew :app:assembleOssDebug # -PMYAPP_UPLOAD_STORE_FILE='app/${{ secrets.MYAPP_UPLOAD_STORE_FILE }}' -PMYAPP_UPLOAD_KEY_ALIAS='${{ secrets.MYAPP_UPLOAD_KEY_ALIAS }}' -PMYAPP_UPLOAD_STORE_PASSWORD='${{ secrets.MYAPP_UPLOAD_STORE_PASSWORD }}' -PMYAPP_UPLOAD_KEY_PASSWORD='${{ secrets.MYAPP_UPLOAD_KEY_PASSWORD }}'
