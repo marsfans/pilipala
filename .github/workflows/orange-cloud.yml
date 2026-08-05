@@ -29,21 +29,27 @@ jobs:
         # fetch-depth: 0
         # submodules: true
 
-    - name: set up JDK 21
-      uses: actions/setup-java@v4
-      with:
-        java-version: '21'
-        distribution: 'temurin'
-        cache: 'gradle'
-
-    - name: Install Android SDK
-      uses: android-actions/setup-android@v3
-    - name: settings Android SDK
+    - name: Install JetBrains Runtime 21
       run: |
-        sdkmanager \
-          "platform-tools" \
-          "platforms;android-36" \
-          "build-tools;36.0.0"
+        wget https://cache-redirector.jetbrains.com/intellij-jbr/jbrsdk-21.0.7-linux-x64-b895.130.tar.gz
+        tar -xf jbrsdk-21.0.7-linux-x64-b895.130.tar.gz
+    
+        echo "JAVA_HOME=$PWD/jbrsdk-21.0.7" >> $GITHUB_ENV
+        echo "$PWD/jbrsdk-21.0.7/bin" >> $GITHUB_PATH
+    
+    - name: Verify Java
+      run: |
+        java -version
+        echo $JAVA_HOME
+
+    # - name: Install Android SDK
+    #   uses: android-actions/setup-android@v3
+    # - name: settings Android SDK
+    #   run: |
+    #     sdkmanager \
+    #       "platform-tools" \
+    #       "platforms;android-36" \
+    #       "build-tools;36.0.0"
     - name: gradlew assembleOssDebug
       run: |
         cd apps/android
