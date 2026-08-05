@@ -26,19 +26,16 @@ jobs:
           fetch-depth: 0
 
       - name: Select Xcode
-        run: sudo xcode-select -s "/Applications/Xcode_26.1.app"
+        run: sudo xcode-select -s "/Applications/Xcode.app"
 
       - name: Build iOS target
         run: |
           cd "apps/ios/Orange Cloud/"
-          xcodebuild -downloadPlatform iOS -architectureVariant arm64
-          xcodebuild -runFirstLaunch
           xcodebuild -list
           xcodebuild \
           -project "Orange Cloud.xcodeproj" \
           -scheme "Orange Cloud" \
           -configuration ${{ github.event.inputs.build_type }} \
-          -sdk iphoneos \
           -destination "generic/platform=iOS" \
           CODE_SIGNING_ALLOWED=NO \
           CODE_SIGN_IDENTITY="" \
