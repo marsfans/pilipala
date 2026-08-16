@@ -47,11 +47,11 @@ jobs:
     - name: gradlew assembleOssDebug
       run: |
         cd apps/android
-        grep -R "JETBRAINS" .
-        grep -R "JvmVendorSpec" .
+        # grep -R "JETBRAINS" .
+        # grep -R "JvmVendorSpec" .
         echo ${{ secrets.MYAPP_KEYSTORE_BASE64 }} | base64 --decode > app/${{ secrets.MYAPP_UPLOAD_STORE_FILE }}
         chmod +x ./gradlew
-        ./gradlew :app:assembleOssDebug # -PMYAPP_UPLOAD_STORE_FILE='app/${{ secrets.MYAPP_UPLOAD_STORE_FILE }}' -PMYAPP_UPLOAD_KEY_ALIAS='${{ secrets.MYAPP_UPLOAD_KEY_ALIAS }}' -PMYAPP_UPLOAD_STORE_PASSWORD='${{ secrets.MYAPP_UPLOAD_STORE_PASSWORD }}' -PMYAPP_UPLOAD_KEY_PASSWORD='${{ secrets.MYAPP_UPLOAD_KEY_PASSWORD }}'
+        ./gradlew :app:assembleOssDebug -Dorg.gradle.java.installations.auto-detect=true # -PMYAPP_UPLOAD_STORE_FILE='app/${{ secrets.MYAPP_UPLOAD_STORE_FILE }}' -PMYAPP_UPLOAD_KEY_ALIAS='${{ secrets.MYAPP_UPLOAD_KEY_ALIAS }}' -PMYAPP_UPLOAD_STORE_PASSWORD='${{ secrets.MYAPP_UPLOAD_STORE_PASSWORD }}' -PMYAPP_UPLOAD_KEY_PASSWORD='${{ secrets.MYAPP_UPLOAD_KEY_PASSWORD }}'
 
     # - name: Sign app APK
     #   id: sign_app
