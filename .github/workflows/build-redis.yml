@@ -1,0 +1,114 @@
+name: Build Redis
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Redis version"
+        required: true
+        default: "8.10.1"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Redis ${{ inputs.version || github.ref_name }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            arch: amd64
+            artifact: redis-linux-amd64
+
+          - os: ubuntu-24.04-arm
+            arch: arm64
+            artifact: redis-linux-arm64
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Set version
+        id: version
+        shell: bash
+        run: |
+          if [ -n "${{ inputs.version }}" ]; then
+            echo "version=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=${GITHUB_REF_NAME#redis-}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+
+          sudo apt-get install -y \
+            build-essential \
+            ca-certificates \
+            wget \
+            git \
+            curl \
+            libssl-dev \
+            python3 \
+            python3-pip \
+            python3-venv \
+            cmake \
+            pkg-config
+
+      - name: Checkout Redis
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+
+          wget -O redis.tar.gz \
+            "https://github.com/redis/redis/releases/download/${VERSION}/redis-full.tar.gz"
+
+          tar -xzf redis.tar.gz
+
+          mv "redis-${VERSION}" redis
+
+      - name: Build Redis
+        working-directory: redis
+        run: |
+          export BUILD_TLS=yes
+          export INSTALL_RUST_TOOLCHAIN=yes
+
+          make -j"$(nproc)" all
+
+      - name: Package
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          ARCH="${{ matrix.arch }}"
+
+          mkdir -p package/redis-${VERSION}/bin
+          mkdir -p package/redis-${VERSION}/etc
+
+          cp redis/src/redis-server \
+             package/redis-${VERSION}/bin/
+
+          cp redis/src/redis-cli \
+             package/redis-${VERSION}/bin/
+
+          cp redis/redis.conf \
+             package/redis-${VERSION}/etc/
+
+          cp redis/README.md \
+             package/redis-${VERSION}/
+
+          tar -C package \
+            -czf "redis-${VERSION}-linux-${ARCH}.tar.gz" \
+            "redis-${VERSION}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: redis-*-linux-*.tar.gz
+
+      - name: Upload release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: redis-${{ github.ref_name }}
+          name: Redis ${{ github.ref_name }}
+          files: |
+            redis-*-linux-amd64.tar.gz
+            redis-*-linux-arm64.tar.gz
