@@ -72,7 +72,7 @@ jobs:
           export BUILD_TLS=yes
           export INSTALL_RUST_TOOLCHAIN=yes
 
-          make -j"$(nproc)" all
+          make -j"$(nproc)" build redis
 
       - name: Package
         run: |
