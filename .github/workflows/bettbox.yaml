@@ -420,7 +420,6 @@ jobs:
           name: Bettbox-${{ matrix.platform }}-${{ matrix.arch }}-${{ inputs.version }}
           path: release/*
           if-no-files-found: error
-          archive: false
           overwrite: true
 
 
