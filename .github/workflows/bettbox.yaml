@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Bettbox version, e.g. 1.8.0 or 1.8.0-pre1'
+        description: 'Bettbox version, e.g. 1.19.2 or 1.19.2-pre1'
         required: true
         type: string
 
@@ -471,9 +471,8 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: v${{ inputs.version }}
-          name: Bettbox ${{ inputs.version }}
-          target_commitish: main
+          tag_name: Bettbox-v${{ inputs.version }}
+          name: Bettbox-v${{ inputs.version }}
           files: dist/*
           generate_release_notes: true
           prerelease: ${{ contains(inputs.version, '-pre') }}
