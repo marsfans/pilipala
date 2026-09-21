@@ -1,0 +1,479 @@
+name: Build Bettbox
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Bettbox version, e.g. 1.8.0 or 1.8.0-pre1'
+        required: true
+        type: string
+
+      release:
+        description: 'Create GitHub Release'
+        required: true
+        default: true
+        type: boolean
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  GRADLE_OPTS: -Dorg.gradle.vfs.watch=false
+  SENTRY_BACKEND: none
+
+jobs:
+
+  # ============================================================
+  # Build
+  # ============================================================
+
+  build:
+    name: ${{ matrix.platform }}-${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+
+      matrix:
+
+        include:
+
+          # ----------------------------------------------------
+          # Windows x64
+          # ----------------------------------------------------
+
+          - platform: windows
+            os: windows-2022
+            arch: amd64
+
+          # ----------------------------------------------------
+          # Windows ARM64
+          # ----------------------------------------------------
+
+          - platform: windows
+            os: windows-11-arm
+            arch: arm64
+
+          # ----------------------------------------------------
+          # macOS Apple Silicon
+          # ----------------------------------------------------
+
+          - platform: macos
+            os: macos-15
+            arch: arm64
+
+          # ----------------------------------------------------
+          # macOS Intel
+          # ----------------------------------------------------
+
+          - platform: macos
+            os: macos-15
+            arch: amd64
+
+          # ----------------------------------------------------
+          # Linux x64
+          # ----------------------------------------------------
+
+          - platform: linux
+            os: ubuntu-22.04
+            arch: amd64
+
+          # ----------------------------------------------------
+          # Linux ARM64
+          # ----------------------------------------------------
+
+          - platform: linux
+            os: ubuntu-24.04-arm
+            arch: arm64
+
+    steps:
+
+      # ========================================================
+      # Checkout Bettbox
+      # ========================================================
+
+      - name: Checkout Bettbox
+        uses: actions/checkout@v6
+        with:
+          repository: appshubcc/Bettbox
+          ref: v${{ inputs.version }}
+          submodules: recursive
+          fetch-depth: 1
+
+      # ========================================================
+      # Show version
+      # ========================================================
+
+      - name: Show Build Information
+        shell: bash
+        run: |
+          echo "========================================"
+          echo "Bettbox Build"
+          echo "========================================"
+          echo "Repository : appshubcc/Bettbox"
+          echo "Version    : ${{ inputs.version }}"
+          echo "Platform   : ${{ matrix.platform }}"
+          echo "Architecture: ${{ matrix.arch }}"
+          echo "========================================"
+
+      # ========================================================
+      # Rust
+      # ========================================================
+
+      - name: Setup Rust (Windows)
+        if: matrix.platform == 'windows'
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.arch == 'arm64' && 'aarch64-pc-windows-msvc' || 'x86_64-pc-windows-msvc' }}
+
+      - name: Setup Rust (macOS)
+        if: matrix.platform == 'macos'
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.arch == 'amd64' && 'x86_64-apple-darwin' || 'aarch64-apple-darwin' }}
+
+      - name: Setup Rust (Linux)
+        if: matrix.platform == 'linux'
+        uses: dtolnay/rust-toolchain@stable
+
+      # ========================================================
+      # Windows long paths
+      # ========================================================
+
+      - name: Enable Git Long Paths
+        if: matrix.platform == 'windows'
+        run: git config --global core.longpaths true
+
+      # ========================================================
+      # Linux dependencies
+      # ========================================================
+
+      - name: Install Linux Dependencies
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update \
+            -o Acquire::Retries=3 \
+            -o Acquire::ForceIPv4=true
+
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 \
+            -o Acquire::ForceIPv4=true \
+            --fix-missing \
+            libcurl4-openssl-dev \
+            ninja-build \
+            libgtk-3-dev \
+            rpm
+
+      # ========================================================
+      # Go
+      # ========================================================
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.25.x'
+          cache-dependency-path: core/go.sum
+
+      # ========================================================
+      # Flutter
+      # ========================================================
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.44.9'
+          cache: true
+          cache-key: flutter-${{ matrix.platform }}-${{ matrix.arch }}-${{ hashFiles('**/pubspec.lock') }}
+
+      # ========================================================
+      # Clear Pub credentials
+      # ========================================================
+
+      - name: Clear Pub Cache Credentials
+        shell: bash
+        run: |
+          rm -f ~/.pub-cache/credentials.json 2>/dev/null || true
+
+      # ========================================================
+      # macOS
+      # ========================================================
+
+      - name: Disable Swift Package Manager
+        if: matrix.platform == 'macos'
+        run: flutter config --no-enable-swift-package-manager
+
+      # ========================================================
+      # Windows sing-tun patch
+      # ========================================================
+
+      - name: Patch sing-tun for Windows
+        if: matrix.platform == 'windows'
+        shell: bash
+        run: |
+          cd core
+
+          SING_TUN_VERSION=$(grep \
+            -E 'github\.com/metacubex/sing-tun\s+v[^[:space:]]+' \
+            go.mod | awk '{print $2}')
+
+          echo "Detected sing-tun version: ${SING_TUN_VERSION}"
+
+          go mod download \
+            github.com/metacubex/sing-tun@${SING_TUN_VERSION}
+
+          MOD_CACHE=$(go env GOMODCACHE | tr '\\' '/')
+
+          FILE="${MOD_CACHE}/github.com/metacubex/sing-tun@${SING_TUN_VERSION}/tun_windows.go"
+
+          echo "Patching ${FILE}"
+
+          chmod +w "${FILE}" || true
+
+      # ========================================================
+      # Flutter dependencies
+      # ========================================================
+
+      - name: Flutter Pub Get
+        shell: bash
+        run: |
+          flutter pub get
+
+      # ========================================================
+      # Build Runner
+      # ========================================================
+
+      - name: Build Runner
+        shell: bash
+        run: |
+          dart run build_runner build -d
+
+      # ========================================================
+      # Build Bettbox
+      # ========================================================
+
+      - name: Build Bettbox
+        shell: bash
+        env:
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          IPINFO_TOKEN: ${{ secrets.IPINFO_TOKEN }}
+        run: |
+
+          APP_ENV="stable"
+
+          if [[ "${{ inputs.version }}" == *"-pre"* ]]; then
+            APP_ENV="pre"
+          fi
+
+          echo "APP_ENV=$APP_ENV"
+
+          dart setup.dart \
+            ${{ matrix.platform }} \
+            --arch ${{ matrix.arch }} \
+            --env "$APP_ENV"
+
+      # ========================================================
+      # Windows Portable
+      # ========================================================
+
+      - name: Build Windows Portable
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+
+          $version = "${{ inputs.version }}"
+
+          if ("${{ matrix.arch }}" -eq "arm64") {
+            $flutterArch = "arm64"
+          }
+          else {
+            $flutterArch = "x64"
+          }
+
+          $sourceDir = "build/windows/$flutterArch/runner/Release"
+
+          $portableDir = "dist/Bettbox-$version-windows-${{ matrix.arch }}-portable"
+
+          $zipPath = "dist/Bettbox-$version-windows-${{ matrix.arch }}-portable.zip"
+
+          Write-Host "========================================"
+          Write-Host "Windows Portable"
+          Write-Host "Version : $version"
+          Write-Host "Arch    : ${{ matrix.arch }}"
+          Write-Host "Source  : $sourceDir"
+          Write-Host "========================================"
+
+          if (!(Test-Path $sourceDir)) {
+            throw "Flutter Windows build directory not found: $sourceDir"
+          }
+
+          if (Test-Path $portableDir) {
+            Remove-Item `
+              $portableDir `
+              -Recurse `
+              -Force
+          }
+
+          New-Item `
+            -ItemType Directory `
+            -Path $portableDir `
+            -Force | Out-Null
+
+          # ----------------------------------------------------
+          # Flutter application
+          # ----------------------------------------------------
+
+          Copy-Item `
+            "$sourceDir\*" `
+            $portableDir `
+            -Recurse `
+            -Force
+
+          # ----------------------------------------------------
+          # Core
+          # ----------------------------------------------------
+
+          if (Test-Path "libclash/windows/BettboxCore.exe") {
+
+            Copy-Item `
+              "libclash/windows/BettboxCore.exe" `
+              "$portableDir\BettboxCore.exe" `
+              -Force
+
+          }
+
+          # ----------------------------------------------------
+          # Helper Service
+          # ----------------------------------------------------
+
+          if (Test-Path "libclash/windows/BettboxHelperService.exe") {
+
+            Copy-Item `
+              "libclash/windows/BettboxHelperService.exe" `
+              "$portableDir\BettboxHelperService.exe" `
+              -Force
+
+          }
+
+          # ----------------------------------------------------
+          # Portable marker
+          # ----------------------------------------------------
+
+          @"
+          Bettbox Portable
+          Version: $version
+          Architecture: ${{ matrix.arch }}
+
+          No installation required.
+          "@ | Set-Content `
+            "$portableDir\portable.txt" `
+            -Encoding UTF8
+
+          # ----------------------------------------------------
+          # ZIP
+          # ----------------------------------------------------
+
+          if (Test-Path $zipPath) {
+            Remove-Item `
+              $zipPath `
+              -Force
+          }
+
+          Compress-Archive `
+            -Path "$portableDir\*" `
+            -DestinationPath $zipPath `
+            -CompressionLevel Optimal
+
+          Write-Host "Portable package:"
+          Write-Host $zipPath
+
+          Remove-Item `
+            $portableDir `
+            -Recurse `
+            -Force
+
+      # ========================================================
+      # Rename / collect outputs
+      # ========================================================
+
+      - name: Prepare Release Files
+        shell: bash
+        run: |
+
+          VERSION="${{ inputs.version }}"
+
+          mkdir -p release
+
+          echo "========================================"
+          echo "Collecting release files"
+          echo "========================================"
+
+          find dist -maxdepth 1 -type f -print || true
+
+          cp dist/* release/ 2>/dev/null || true
+
+      # ========================================================
+      # Upload Artifact
+      # ========================================================
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: Bettbox-${{ matrix.platform }}-${{ matrix.arch }}-${{ inputs.version }}
+          path: release/*
+          if-no-files-found: error
+          archive: false
+          overwrite: true
+
+
+  # ============================================================
+  # Release
+  # ============================================================
+
+  release:
+    name: Create Release
+    needs: build
+    if: inputs.release == true
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      actions: read
+
+    steps:
+
+      # --------------------------------------------------------
+      # Download all artifacts
+      # --------------------------------------------------------
+
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v8
+        with:
+          pattern: Bettbox-*
+          path: dist
+          merge-multiple: true
+
+      # --------------------------------------------------------
+      # Show files
+      # --------------------------------------------------------
+
+      - name: List Release Files
+        run: |
+          echo "========================================"
+          echo "Release files"
+          echo "========================================"
+
+          find dist -type f -maxdepth 2 -print
+
+      # --------------------------------------------------------
+      # Create Release
+      # --------------------------------------------------------
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: v${{ inputs.version }}
+          name: Bettbox ${{ inputs.version }}
+          target_commitish: main
+          files: dist/*
+          generate_release_notes: true
+          prerelease: ${{ contains(inputs.version, '-pre') }}
