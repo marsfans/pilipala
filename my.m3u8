@@ -15,10 +15,19 @@ https://ngcdn001.cnr.cn/live/zhzs/index.m3u8
 https://ngcdn001.cnr.cn/live/szzs/index.m3u8
 #EXTINF:-1 group-title="央广电台" tvg-logo="https://cnvod.cnr.cn/audio2017/ondemand/img/1100/20230612/1686554680065.png",CNR大湾区之声
 https://ngcdn001.cnr.cn/live/hxzs/index.m3u8
+#EXTINF:-1 group-title="央广电台" tvg-logo="https://cnvod.cnr.cn/audio2016/default/2014/9/18/1411026604061.jpg",CNR民族之声
+https://ngcdn001.cnr.cn/live/mzzs/index.m3u8
+#EXTINF:-1 group-title="央广电台" tvg-logo="https://cnvod.cnr.cn/audio2016/default/2014/9/18/1411025674178.jpg",CNR文艺之声
+https://ngcdn001.cnr.cn/live/wyzs/index.m3u8
+#EXTINF:-1 group-title="央广电台" tvg-logo="https://cnvod.cnr.cn/audio2017/ondemand/img/1100/20221211/1670743148470.jpg",CNR中国交通之声
+https://ngcdn001.cnr.cn/live/gsgljtgb/index.m3u8
+
 #EXTINF:-1 group-title="央广电台" tvg-logo="https://cnvod.cnr.cn/audio2017/ondemand/img/1100/20200306/1583464064428.jpg",环球资讯
 https://sk.cri.cn/905.m3u8
-#EXTINF:-1 group-title="央广电台" tvg-logo="https://cnvod.cnr.cn/audio2017/ondemand/img/1100/20191227/1577439531060.png",HIT FM
-https://sk.cri.cn/887.m3u8
+#EXTINF:-1 group-title="央广电台" tvg-logo="https://cnvod.cnr.cn/audio2017/ondemand/media/1100/20200528/1590662120265.jpg",CNR南海之声
+https://ngcdn001.cnr.cn/live/nhzs/index.m3u8
+#EXTINF:-1 group-title="央广电台" tvg-logo="https://cnvod.cnr.cn/audio2017/ondemand/media/1100/20211222/1640137536123.jpg",英语资讯广播 CGTN Radio
+https://sk.cri.cn/am846.m3u8
 
 #EXTGRP:央广电视
 #EXTINF:-1 group-title="央广电视" tvg-logo="",CCTV1
