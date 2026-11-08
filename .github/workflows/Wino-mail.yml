@@ -1,4 +1,4 @@
-# Build Wino-Mail from bkaankose/Wino-Mail, two publish modes.
+# Build Wino-Mail from bkaankose/Wino-Mail, two publish modes, via a matrix.
 # Drop into a fork as .github/workflows/build-self-contained.yml, then
 # Actions -> Build Wino-Mail (self-contained + framework-dependent) -> Run workflow.
 #
@@ -11,22 +11,46 @@
 #      Because it checks out upstream (not the fork), the 3-account limit is
 #      raised inside the workflow itself (step "Raise account limit"), so the
 #      fork does not need the Constants.cs edit beforehand.
-#   3. Publishes twice, both Release / x64 / win-x64:
-#        - self-contained true:  dotnet publish --self-contained true
+#   3. Matrix build (job `build`): two Windows jobs run IN PARALLEL, one per
+#      row of `strategy.matrix.include` — same steps, only the publish flags
+#      differ:
+#        - self-contained:        dotnet publish --self-contained true
 #          (keeps the repo's default Native AOT; needs no .NET runtime on the PC)
-#        - self-contained false: dotnet publish --self-contained false
-#          (framework-dependent; needs the .NET 10 runtime installed on the PC)
-#      NOTE: Native AOT cannot be framework-dependent, so the false build
+#        - framework-dependent:   dotnet publish --self-contained false
+#          (needs the .NET 10 runtime installed on the PC)
+#      NOTE: Native AOT cannot be framework-dependent, so the false row
 #      explicitly disables it (-p:PublishAot=false -p:UseNativeAot=false
 #      -p:PublishTrimmed=false). Without those flags the false build fails.
-#   4. Zips each publish folder as AppName-Version-Variant:
+#      NOTE 2 (NETSDK1151, seen 2026-11-08): Wino.NotificationHost and
+#      Wino.WidgetHost hardcode <SelfContained>true</SelfContained> and
+#      <PublishAot>true</PublishAot> in their .csproj, and Wino.Mail.WinUI
+#      references them as ProjectReference (only Platform/RuntimeIdentifier
+#      are propagated). So `--self-contained false` on the main project alone
+#      does NOT reach the hosts, and the SDK refuses a non-self-contained
+#      exe referencing self-contained exes (NETSDK1151). The false row
+#      therefore ALSO passes -p:SelfContained=false (a global MSBuild
+#      property, which the hosts cannot override) AND patches both host
+#      .csproj files to false in the "Make hosts framework-dependent" step
+#      below. Either alone should in theory suffice; both are kept so the
+#      next run has the best chance of passing. The self-contained row is
+#      unaffected — its hosts stay self-contained + AOT.
+#      `fail-fast: false` means one variant failing does not cancel the other.
+#      Total Windows minutes are about the same as the sequential version;
+#      wall time is roughly halved because the two jobs run at once.
+#   4. Each matrix job zips its own publish folder as AppName-Version-Variant:
 #        Wino-Mail-<version>-self-contained.zip
 #        Wino-Mail-<version>-framework-dependent.zip
 #      e.g. Wino-Mail-2.2.11.0-self-contained.zip
-#   5. Creates a GitHub Release in the FORK (not upstream) with tag
-#      AppName-Version, e.g. Wino-Mail-2.2.11.0, and attaches both zips.
+#   5. Job `release` (needs: build, runs on ubuntu-latest) downloads both
+#      artifacts, derives the version from the artifact filename (so the tag
+#      always matches the built zips, even if upstream released in between),
+#      and creates a GitHub Release in the FORK (not upstream) with tag
+#      AppName-Version, e.g. Wino-Mail-2.2.11.0, attaching both zips.
 #      Re-running for the same version updates that release and overwrites
 #      same-named assets (softprops/action-gh-release behaviour).
+#      The release step lives in its own job on purpose: matrix is job-level
+#      only (there is no step-level matrix), and two matrix jobs must not
+#      both try to create the same release tag at the same time.
 #
 # What this does NOT produce: an installable MSIX / Store package. These are
 # unpackaged publish folders, zipped. Wino needs MSIX package identity to run,
@@ -46,6 +70,16 @@ permissions:
 jobs:
   build:
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: self-contained
+            self_contained: true
+            extra_args: ""
+          - variant: framework-dependent
+            self_contained: false
+            extra_args: "-p:SelfContained=false -p:PublishAot=false -p:UseNativeAot=false -p:PublishTrimmed=false"
     steps:
       - name: Get latest release version
         id: latest
@@ -78,45 +112,79 @@ jobs:
           Set-Content $file $text -NoNewline
           Select-String -Path $file -Pattern "FreeAccountLimit"
 
-      - name: Publish self-contained (true)
-        run: dotnet publish src/Wino.Mail.WinUI/Wino.Mail.WinUI.csproj -c Release -p:Platform=x64 -r win-x64 --self-contained true -p:GenerateAppxPackageOnBuild=false -o publish/self-contained
+      # NETSDK1151 fix, framework-dependent row only: the two host projects
+      # hardcode SelfContained/PublishAot=true, and --self-contained false on
+      # the main project does not propagate to them. Patch them to false here
+      # so the main exe and both hosts agree (all framework-dependent).
+      - name: Make Notification/Widget hosts framework-dependent too
+        if: matrix.variant == 'framework-dependent'
+        shell: pwsh
+        run: |
+          $files = @(
+            "src/Wino.NotificationHost/Wino.NotificationHost.csproj",
+            "src/Wino.WidgetHost/Wino.WidgetHost.csproj"
+          )
+          foreach ($file in $files) {
+            $text = Get-Content $file -Raw
+            if ($text -notmatch "<SelfContained>true</SelfContained>") { throw "Expected <SelfContained>true</SelfContained> in $file - upstream may have changed it." }
+            $text = $text.Replace("<SelfContained>true</SelfContained>", "<SelfContained>false</SelfContained>")
+            $text = $text.Replace("<PublishAot>true</PublishAot>", "<PublishAot>false</PublishAot>")
+            $text = $text.Replace("<PublishTrimmed>true</PublishTrimmed>", "<PublishTrimmed>false</PublishTrimmed>")
+            Set-Content $file $text -NoNewline
+            Write-Host "Patched $file"
+            Select-String -Path $file -Pattern "SelfContained|PublishAot|PublishTrimmed"
+          }
 
-      - name: Publish framework-dependent (false)
-        run: dotnet publish src/Wino.Mail.WinUI/Wino.Mail.WinUI.csproj -c Release -p:Platform=x64 -r win-x64 --self-contained false -p:GenerateAppxPackageOnBuild=false -p:PublishAot=false -p:UseNativeAot=false -p:PublishTrimmed=false -o publish/framework-dependent
+      - name: Publish (${{ matrix.variant }})
+        run: dotnet publish src/Wino.Mail.WinUI/Wino.Mail.WinUI.csproj -c Release -p:Platform=x64 -r win-x64 --self-contained ${{ matrix.self_contained }} -p:GenerateAppxPackageOnBuild=false ${{ matrix.extra_args }} -o publish/${{ matrix.variant }}
 
-      - name: Package as AppName-Version zips
+      - name: Package as AppName-Version zip
         shell: pwsh
         run: |
           $version = "${{ steps.latest.outputs.version }}"
           if ([string]::IsNullOrWhiteSpace($version)) { throw "Version is empty." }
-          if (-not (Test-Path "publish/self-contained")) { throw "publish/self-contained not found." }
-          if (-not (Test-Path "publish/framework-dependent")) { throw "publish/framework-dependent not found." }
-          Compress-Archive -Path "publish/self-contained/*" -DestinationPath "Wino-Mail-$version-self-contained.zip"
-          Compress-Archive -Path "publish/framework-dependent/*" -DestinationPath "Wino-Mail-$version-framework-dependent.zip"
-          Get-ChildItem "Wino-Mail-$version-*.zip" | Select-Object Name, Length
+          if (-not (Test-Path "publish/${{ matrix.variant }}")) { throw "publish/${{ matrix.variant }} not found." }
+          Compress-Archive -Path "publish/${{ matrix.variant }}/*" -DestinationPath "Wino-Mail-$version-${{ matrix.variant }}.zip"
+          Get-ChildItem "Wino-Mail-$version-${{ matrix.variant }}.zip" | Select-Object Name, Length
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Wino-Mail-${{ steps.latest.outputs.version }}-self-contained
-          path: Wino-Mail-${{ steps.latest.outputs.version }}-self-contained.zip
+          name: Wino-Mail-${{ steps.latest.outputs.version }}-${{ matrix.variant }}
+          path: Wino-Mail-${{ steps.latest.outputs.version }}-${{ matrix.variant }}.zip
 
-      - uses: actions/upload-artifact@v4
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
         with:
-          name: Wino-Mail-${{ steps.latest.outputs.version }}-framework-dependent
-          path: Wino-Mail-${{ steps.latest.outputs.version }}-framework-dependent.zip
+          pattern: Wino-Mail-*
+          path: dist
+          merge-multiple: true
+
+      - name: Derive version from artifact name
+        id: version
+        shell: bash
+        run: |
+          ls -l dist
+          ZIP=$(ls dist/Wino-Mail-*-self-contained.zip | head -n 1)
+          VERSION=$(basename "$ZIP" | sed -E 's/^Wino-Mail-(.*)-self-contained\.zip$/\1/')
+          if [ -z "$VERSION" ]; then echo "Could not derive version from $ZIP" >&2; exit 1; fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Version: $VERSION"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: Wino-Mail-${{ steps.latest.outputs.version }}
-          name: Wino-Mail ${{ steps.latest.outputs.version }}
+          tag_name: Wino-Mail-${{ steps.version.outputs.version }}
+          name: Wino-Mail ${{ steps.version.outputs.version }}
           body: |
-            Fork build of bkaankose/Wino-Mail ${{ steps.latest.outputs.version }} with the 3-account limit raised to 99 (FreeAccountLimit in src/Wino.Core.Domain/Constants.cs).
+            Fork build of bkaankose/Wino-Mail ${{ steps.version.outputs.version }} with the 3-account limit raised to 99 (FreeAccountLimit in src/Wino.Core.Domain/Constants.cs).
             Unpackaged publish folders, zipped — not an MSIX / Store package, and not an official Wino release.
-            - Wino-Mail-${{ steps.latest.outputs.version }}-self-contained.zip: self-contained, no .NET runtime needed on the PC.
-            - Wino-Mail-${{ steps.latest.outputs.version }}-framework-dependent.zip: needs the .NET 10 runtime installed on the PC.
+            - Wino-Mail-${{ steps.version.outputs.version }}-self-contained.zip: self-contained, no .NET runtime needed on the PC.
+            - Wino-Mail-${{ steps.version.outputs.version }}-framework-dependent.zip: needs the .NET 10 runtime installed on the PC.
           draft: false
-          prerelease: true
+          prerelease: false
           files: |
-            Wino-Mail-${{ steps.latest.outputs.version }}-self-contained.zip
-            Wino-Mail-${{ steps.latest.outputs.version }}-framework-dependent.zip
+            dist/Wino-Mail-${{ steps.version.outputs.version }}-self-contained.zip
+            dist/Wino-Mail-${{ steps.version.outputs.version }}-framework-dependent.zip
