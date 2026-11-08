@@ -1,0 +1,122 @@
+# Build Wino-Mail from bkaankose/Wino-Mail, two publish modes.
+# Drop into a fork as .github/workflows/build-self-contained.yml, then
+# Actions -> Build Wino-Mail (self-contained + framework-dependent) -> Run workflow.
+#
+# What it does, in order:
+#   1. Asks the GitHub API for the repo's LATEST release tag (NOT hardcoded).
+#      As written, that is v2.2.11.0 ("Wino Mail 2.2.11", published 2026-11-05);
+#      at run time the workflow re-reads it, so a newer release is picked up
+#      automatically. Version = tag without the leading "v" (2.2.11.0).
+#   2. Checks out THAT tag from bkaankose/Wino-Mail with actions/checkout@v4.
+#      Because it checks out upstream (not the fork), the 3-account limit is
+#      raised inside the workflow itself (step "Raise account limit"), so the
+#      fork does not need the Constants.cs edit beforehand.
+#   3. Publishes twice, both Release / x64 / win-x64:
+#        - self-contained true:  dotnet publish --self-contained true
+#          (keeps the repo's default Native AOT; needs no .NET runtime on the PC)
+#        - self-contained false: dotnet publish --self-contained false
+#          (framework-dependent; needs the .NET 10 runtime installed on the PC)
+#      NOTE: Native AOT cannot be framework-dependent, so the false build
+#      explicitly disables it (-p:PublishAot=false -p:UseNativeAot=false
+#      -p:PublishTrimmed=false). Without those flags the false build fails.
+#   4. Zips each publish folder as AppName-Version-Variant:
+#        Wino-Mail-<version>-self-contained.zip
+#        Wino-Mail-<version>-framework-dependent.zip
+#      e.g. Wino-Mail-2.2.11.0-self-contained.zip
+#   5. Creates a GitHub Release in the FORK (not upstream) with tag
+#      AppName-Version, e.g. Wino-Mail-2.2.11.0, and attaches both zips.
+#      Re-running for the same version updates that release and overwrites
+#      same-named assets (softprops/action-gh-release behaviour).
+#
+# What this does NOT produce: an installable MSIX / Store package. These are
+# unpackaged publish folders, zipped. Wino needs MSIX package identity to run,
+# so on your Windows PC they still need the dev-layout route (WinApp CLI 0.7+,
+# Developer Mode, `winapp run`) or repackaging as MSIX (see build-msix.yml).
+# Do not redistribute the result as if it were official Wino.
+# Trigger: manual only. No push, pull_request, or schedule triggers, so
+# this workflow never runs on its own — run it from Actions -> Run workflow.
+name: Build Wino-Mail (self-contained + framework-dependent)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write # needed to create the GitHub Release in the fork
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Get latest release version
+        id: latest
+        shell: pwsh
+        run: |
+          $release = Invoke-RestMethod -Uri "https://api.github.com/repos/bkaankose/Wino-Mail/releases/latest" -Headers @{ "User-Agent" = "wino-build-workflow" }
+          $tag = $release.tag_name
+          if ([string]::IsNullOrWhiteSpace($tag)) { throw "Could not read latest release tag from GitHub API." }
+          $version = $tag -replace '^v', ''
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          "version=$version" >> $env:GITHUB_OUTPUT
+          Write-Host "Latest release: $tag (version $version)"
+
+      - uses: actions/checkout@v4
+        with:
+          repository: bkaankose/Wino-Mail
+          ref: ${{ steps.latest.outputs.tag }}
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x" # global.json pins 10.0.401
+
+      - name: Raise account limit 3 -> 99
+        shell: pwsh
+        run: |
+          $file = "src/Wino.Core.Domain/Constants.cs"
+          $text = Get-Content $file -Raw
+          if ($text -notmatch "FreeAccountLimit = 3") { throw "FreeAccountLimit = 3 not found in $file - upstream may have moved it." }
+          $text = $text -replace "FreeAccountLimit = 3", "FreeAccountLimit = 99"
+          Set-Content $file $text -NoNewline
+          Select-String -Path $file -Pattern "FreeAccountLimit"
+
+      - name: Publish self-contained (true)
+        run: dotnet publish src/Wino.Mail.WinUI/Wino.Mail.WinUI.csproj -c Release -p:Platform=x64 -r win-x64 --self-contained true -p:GenerateAppxPackageOnBuild=false -o publish/self-contained
+
+      - name: Publish framework-dependent (false)
+        run: dotnet publish src/Wino.Mail.WinUI/Wino.Mail.WinUI.csproj -c Release -p:Platform=x64 -r win-x64 --self-contained false -p:GenerateAppxPackageOnBuild=false -p:PublishAot=false -p:UseNativeAot=false -p:PublishTrimmed=false -o publish/framework-dependent
+
+      - name: Package as AppName-Version zips
+        shell: pwsh
+        run: |
+          $version = "${{ steps.latest.outputs.version }}"
+          if ([string]::IsNullOrWhiteSpace($version)) { throw "Version is empty." }
+          if (-not (Test-Path "publish/self-contained")) { throw "publish/self-contained not found." }
+          if (-not (Test-Path "publish/framework-dependent")) { throw "publish/framework-dependent not found." }
+          Compress-Archive -Path "publish/self-contained/*" -DestinationPath "Wino-Mail-$version-self-contained.zip"
+          Compress-Archive -Path "publish/framework-dependent/*" -DestinationPath "Wino-Mail-$version-framework-dependent.zip"
+          Get-ChildItem "Wino-Mail-$version-*.zip" | Select-Object Name, Length
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Wino-Mail-${{ steps.latest.outputs.version }}-self-contained
+          path: Wino-Mail-${{ steps.latest.outputs.version }}-self-contained.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Wino-Mail-${{ steps.latest.outputs.version }}-framework-dependent
+          path: Wino-Mail-${{ steps.latest.outputs.version }}-framework-dependent.zip
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: Wino-Mail-${{ steps.latest.outputs.version }}
+          name: Wino-Mail ${{ steps.latest.outputs.version }}
+          body: |
+            Fork build of bkaankose/Wino-Mail ${{ steps.latest.outputs.version }} with the 3-account limit raised to 99 (FreeAccountLimit in src/Wino.Core.Domain/Constants.cs).
+            Unpackaged publish folders, zipped — not an MSIX / Store package, and not an official Wino release.
+            - Wino-Mail-${{ steps.latest.outputs.version }}-self-contained.zip: self-contained, no .NET runtime needed on the PC.
+            - Wino-Mail-${{ steps.latest.outputs.version }}-framework-dependent.zip: needs the .NET 10 runtime installed on the PC.
+          draft: false
+          prerelease: true
+          files: |
+            Wino-Mail-${{ steps.latest.outputs.version }}-self-contained.zip
+            Wino-Mail-${{ steps.latest.outputs.version }}-framework-dependent.zip
